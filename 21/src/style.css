@@ -1,0 +1,289 @@
+:root {
+  color-scheme: light;
+  /* width/height ratio of logical spread (1280/720) */
+  --spread-ar: 1.777777778;
+  --bg: #2a2826;
+  --paper-edge: rgba(255, 255, 255, 0.08);
+  /* Figma-like tool dock */
+  --figma-bar: #2c2c2c;
+  --figma-bar-border: #3e3e3e;
+  --figma-well: #383838;
+  --figma-well-inner: #2f2f2f;
+  --figma-blue: #18a0fb;
+  --figma-blue-hover: #0d8ee8;
+  --figma-icon: rgba(255, 255, 255, 0.92);
+  --figma-muted: rgba(255, 255, 255, 0.45);
+  --figma-divider: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  font-family: 'EB Garamond', Georgia, serif;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 1rem 5.5rem;
+  gap: 0.75rem;
+}
+
+.viewport {
+  position: relative;
+  width: min(96vw, calc((100vh - 7rem) * var(--spread-ar)));
+  max-width: 1400px;
+}
+
+.spread-shell {
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.18),
+    0 24px 48px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px var(--paper-edge);
+  background: #1a1816;
+  aspect-ratio: var(--spread-ar);
+}
+
+#spread {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 6px;
+  padding: 6px 8px;
+  border-radius: 13px;
+  background: var(--figma-bar);
+  border: 1px solid var(--figma-bar-border);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  z-index: 10;
+  max-width: calc(100vw - 2rem);
+}
+
+.toolbar-cluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-cluster--main {
+  padding: 0 2px;
+}
+
+.toolbar-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 32px;
+  margin: 0 2px;
+  background: var(--figma-divider);
+  border-radius: 1px;
+}
+
+.toolbar-divider--section {
+  height: 36px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toolbar-secondary {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--figma-well);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tool-group--brushes {
+  gap: 2px;
+}
+
+/* Pen / marker / brush / eraser — compact hit targets */
+.tool-group--brushes .tool-btn {
+  width: 36px;
+  height: 36px;
+}
+
+.tool-group--brushes .tool-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.tool-group.colors {
+  gap: 4px;
+  padding-left: 2px;
+}
+
+.tool-group.actions {
+  gap: 2px;
+}
+
+.tool-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  object-fit: contain;
+}
+
+.tool-icon--sm {
+  width: 16px;
+  height: 16px;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--figma-icon);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tool-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tool-btn:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.tool-btn.active {
+  color: #fff;
+  background: var(--figma-blue);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+}
+
+.tool-btn.active:hover {
+  background: var(--figma-blue-hover);
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  background: var(--c);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.swatch:hover {
+  transform: scale(1.06);
+}
+
+.swatch.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--figma-blue);
+}
+
+.swatch-custom {
+  position: relative;
+  overflow: hidden;
+  background: conic-gradient(from 180deg, #f87171, #fbbf24, #4ade80, #60a5fa, #a78bfa, #f87171);
+}
+
+.swatch-custom input[type='color'] {
+  position: absolute;
+  inset: -8px;
+  width: 200%;
+  height: 200%;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  opacity: 0;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--figma-icon);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.icon-btn__text {
+  line-height: 1;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.icon-btn:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.icon-btn--primary {
+  color: #fff;
+  background: var(--figma-blue);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.icon-btn--primary:hover {
+  background: var(--figma-blue-hover);
+}
+
+.icon-btn--primary:active {
+  filter: brightness(0.95);
+}
