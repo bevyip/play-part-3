@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+.bg-swatch {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.bg-swatch.active-bg {
+  border: 2px solid #fff;
+}
+
+#polaroid-overlay button,
+#polaroid-overlay input[type="range"] {
+  cursor: pointer;
+}
+
+@media (max-width: 1023px) {
+  #polaroid-overlay .bg-swatch {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 639px) {
+  #polaroid-overlay .bg-swatch {
+    width: 16px;
+    height: 16px;
+  }
+}
