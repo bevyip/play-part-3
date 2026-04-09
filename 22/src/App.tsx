@@ -33,13 +33,21 @@ const FINISH_PALM_HOLD_MS = 1000;
 const RIGHT_FINGER_EXTEND_NORM = 0.015;
 const RIGHT_THUMB_SPREAD_NORM = 0.018;
 
-const POLAROID_BG_SWATCHES = [
-  "#0d0d1a",
-  "#1a0a14",
-  "#0a1a12",
-  "#1a1520",
-  "#ebe4d8",
+/** Polaroid 3D export backdrop: four dark, then four light. */
+const POLAROID_BG_DARK_COUNT = 4;
+
+const POLAROID_BG_SWATCHES: { value: string; name: string }[] = [
+  { value: "#0e0e0e", name: "charcoal" },
+  { value: "#12111a", name: "ink" },
+  { value: "#0f1a17", name: "evergreen" },
+  { value: "#1a1014", name: "plum" },
+  { value: "#ede8e1", name: "parchment" },
+  { value: "#dde5f5", name: "periwinkle" },
+  { value: "#daeee0", name: "mint" },
+  { value: "#f5dada", name: "blush" },
 ];
+
+const DEFAULT_POLAROID_EXPORT_BG = POLAROID_BG_SWATCHES[0]!.value;
 
 /** Pauses idle spin on main-scene meshes while an offscreen polaroid render runs. */
 let polaroidSnapshotInProgress = false;
@@ -61,9 +69,7 @@ function getPolaroidExportRenderer(): THREE.WebGLRenderer {
     });
     polaroidExportRenderer.setSize(600, 600);
     polaroidExportRenderer.setPixelRatio(
-      typeof window !== "undefined"
-        ? Math.min(window.devicePixelRatio, 2)
-        : 2,
+      typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 2,
     );
     polaroidExportRenderer.toneMapping = THREE.ACESFilmicToneMapping;
     polaroidExportRenderer.toneMappingExposure = 1.5;
@@ -459,7 +465,7 @@ export default function App() {
   const polaroidMeshRef = useRef<THREE.Mesh | null>(null);
   const openPolaroidModalRef = useRef<(mesh: THREE.Mesh) => void>(() => {});
 
-  const polaroidExportBgRef = useRef("#0d0d1a");
+  const polaroidExportBgRef = useRef(DEFAULT_POLAROID_EXPORT_BG);
   const polaroidAngleYRef = useRef(20);
   const polaroidAngleXRef = useRef(15);
   const polaroidNoteRef = useRef("");
@@ -469,7 +475,9 @@ export default function App() {
   const [polaroidAngleY, setPolaroidAngleY] = useState(20);
   const [polaroidAngleX, setPolaroidAngleX] = useState(15);
   /** Polaroid export only — not wired to the live Three.js scene or page background. */
-  const [polaroidExportBg, setPolaroidExportBg] = useState("#0d0d1a");
+  const [polaroidExportBg, setPolaroidExportBg] = useState(
+    DEFAULT_POLAROID_EXPORT_BG,
+  );
   const [polaroidNoteInput, setPolaroidNoteInput] = useState("");
   const [polaroidPreview, setPolaroidPreview] = useState("");
 
@@ -507,11 +515,11 @@ export default function App() {
 
   openPolaroidModalRef.current = (mesh: THREE.Mesh) => {
     polaroidMeshRef.current = mesh;
-    polaroidExportBgRef.current = "#0d0d1a";
+    polaroidExportBgRef.current = DEFAULT_POLAROID_EXPORT_BG;
     polaroidAngleYRef.current = 20;
     polaroidAngleXRef.current = 15;
     polaroidNoteRef.current = "";
-    setPolaroidExportBg("#0d0d1a");
+    setPolaroidExportBg(DEFAULT_POLAROID_EXPORT_BG);
     setPolaroidAngleY(20);
     setPolaroidAngleX(15);
     setPolaroidNoteInput("");
@@ -1334,14 +1342,10 @@ export default function App() {
 
         if (!suppressRightHandGesturesRef.current) {
           const r = rightLandmarks;
-          const indexExt =
-            r[8].y < r[6].y - RIGHT_FINGER_EXTEND_NORM;
-          const middleExt =
-            r[12].y < r[10].y - RIGHT_FINGER_EXTEND_NORM;
-          const ringExt =
-            r[16].y < r[14].y - RIGHT_FINGER_EXTEND_NORM;
-          const pinkyExt =
-            r[20].y < r[18].y - RIGHT_FINGER_EXTEND_NORM;
+          const indexExt = r[8].y < r[6].y - RIGHT_FINGER_EXTEND_NORM;
+          const middleExt = r[12].y < r[10].y - RIGHT_FINGER_EXTEND_NORM;
+          const ringExt = r[16].y < r[14].y - RIGHT_FINGER_EXTEND_NORM;
+          const pinkyExt = r[20].y < r[18].y - RIGHT_FINGER_EXTEND_NORM;
           const thumbExtended =
             Math.abs(r[3].x - r[4].x) > RIGHT_THUMB_SPREAD_NORM;
 
@@ -1596,10 +1600,10 @@ export default function App() {
             {previewLayout.tier === "desktop" ? (
               <>
                 <span>RIGHT-CLICK to pan</span>
-                <span>LEFT-CLICK to save</span>
+                <span>LEFT-CLICK to share object</span>
               </>
             ) : (
-              <span>TAP to save</span>
+              <span>TAP to share object</span>
             )}
           </div>
         </div>
@@ -1684,147 +1688,148 @@ export default function App() {
 
               <div className="shrink-0 space-y-0 lg:space-y-0 max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:py-1 max-sm:py-0 max-sm:pb-1">
                 <div className="flex shrink-0 flex-col gap-5 max-sm:gap-4 lg:contents">
-                <div className="mb-3 max-lg:mb-0 max-sm:mb-0">
-                  <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40 max-lg:mb-1.5 max-lg:text-[10px] max-lg:tracking-[0.14em] max-sm:mb-1 max-sm:text-[9px] max-sm:leading-tight">
-                    VIEW
-                  </div>
-                  <div className="space-y-3 max-lg:space-y-2.5 max-sm:space-y-2">
-                    <div>
-                      <div className="mb-1.5 flex justify-between text-[12px] leading-snug text-white/70 max-lg:mb-1.5 max-lg:text-[12px] max-sm:mb-1 max-sm:text-[11px]">
-                        <span>LEFT/ RIGHT</span>
-                        <span
-                          id="angle-y-val"
-                          className="tabular-nums text-white/85"
-                        >
-                          {polaroidAngleY}°
-                        </span>
-                      </div>
-                      <input
-                        id="angle-y"
-                        type="range"
-                        min={-180}
-                        max={180}
-                        value={polaroidAngleY}
-                        onChange={(e) => {
-                          const v = Number(e.target.value);
-                          polaroidAngleYRef.current = v;
-                          setPolaroidAngleY(v);
-                        }}
-                        onPointerUp={schedulePolaroidPreview}
-                        onKeyUp={(e) => {
-                          if (
-                            e.key === "ArrowLeft" ||
-                            e.key === "ArrowRight" ||
-                            e.key === "ArrowUp" ||
-                            e.key === "ArrowDown" ||
-                            e.key === "Home" ||
-                            e.key === "End"
-                          ) {
-                            schedulePolaroidPreview();
-                          }
-                        }}
-                        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-white max-lg:mt-0.5 max-lg:h-2 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white max-sm:h-1.5 max-sm:[&::-webkit-slider-thumb]:h-2.5 max-sm:[&::-webkit-slider-thumb]:w-2.5"
-                      />
+                  <div className="mb-3 max-lg:mb-0 max-sm:mb-0">
+                    <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-white/40 max-lg:mb-1.5 max-lg:text-[10px] max-lg:tracking-[0.14em] max-sm:mb-1 max-sm:text-[9px] max-sm:leading-tight">
+                      VIEW
                     </div>
-                    <div>
-                      <div className="mb-1.5 flex justify-between text-[12px] leading-snug text-white/70 max-lg:mb-1.5 max-lg:text-[12px] max-sm:mb-1 max-sm:text-[11px]">
-                        <span>UP/ DOWN</span>
-                        <span
-                          id="angle-x-val"
-                          className="tabular-nums text-white/85"
-                        >
-                          {polaroidAngleX}°
-                        </span>
+                    <div className="space-y-3 max-lg:space-y-2.5 max-sm:space-y-2">
+                      <div>
+                        <div className="mb-1.5 flex justify-between text-[12px] leading-snug text-white/70 max-lg:mb-1.5 max-lg:text-[12px] max-sm:mb-1 max-sm:text-[11px]">
+                          <span>LEFT/ RIGHT</span>
+                          <span
+                            id="angle-y-val"
+                            className="tabular-nums text-white/85"
+                          >
+                            {polaroidAngleY}°
+                          </span>
+                        </div>
+                        <input
+                          id="angle-y"
+                          type="range"
+                          min={-180}
+                          max={180}
+                          value={polaroidAngleY}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            polaroidAngleYRef.current = v;
+                            setPolaroidAngleY(v);
+                          }}
+                          onPointerUp={schedulePolaroidPreview}
+                          onKeyUp={(e) => {
+                            if (
+                              e.key === "ArrowLeft" ||
+                              e.key === "ArrowRight" ||
+                              e.key === "ArrowUp" ||
+                              e.key === "ArrowDown" ||
+                              e.key === "Home" ||
+                              e.key === "End"
+                            ) {
+                              schedulePolaroidPreview();
+                            }
+                          }}
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-white max-lg:mt-0.5 max-lg:h-2 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white max-sm:h-1.5 max-sm:[&::-webkit-slider-thumb]:h-2.5 max-sm:[&::-webkit-slider-thumb]:w-2.5"
+                        />
                       </div>
-                      <input
-                        id="angle-x"
-                        type="range"
-                        min={-90}
-                        max={90}
-                        value={polaroidAngleX}
-                        onChange={(e) => {
-                          const v = Number(e.target.value);
-                          polaroidAngleXRef.current = v;
-                          setPolaroidAngleX(v);
-                        }}
-                        onPointerUp={schedulePolaroidPreview}
-                        onKeyUp={(e) => {
-                          if (
-                            e.key === "ArrowLeft" ||
-                            e.key === "ArrowRight" ||
-                            e.key === "ArrowUp" ||
-                            e.key === "ArrowDown" ||
-                            e.key === "Home" ||
-                            e.key === "End"
-                          ) {
-                            schedulePolaroidPreview();
-                          }
-                        }}
-                        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-white max-lg:mt-0.5 max-lg:h-2 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white max-sm:h-1.5 max-sm:[&::-webkit-slider-thumb]:h-2.5 max-sm:[&::-webkit-slider-thumb]:w-2.5"
-                      />
+                      <div>
+                        <div className="mb-1.5 flex justify-between text-[12px] leading-snug text-white/70 max-lg:mb-1.5 max-lg:text-[12px] max-sm:mb-1 max-sm:text-[11px]">
+                          <span>UP/ DOWN</span>
+                          <span
+                            id="angle-x-val"
+                            className="tabular-nums text-white/85"
+                          >
+                            {polaroidAngleX}°
+                          </span>
+                        </div>
+                        <input
+                          id="angle-x"
+                          type="range"
+                          min={-90}
+                          max={90}
+                          value={polaroidAngleX}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            polaroidAngleXRef.current = v;
+                            setPolaroidAngleX(v);
+                          }}
+                          onPointerUp={schedulePolaroidPreview}
+                          onKeyUp={(e) => {
+                            if (
+                              e.key === "ArrowLeft" ||
+                              e.key === "ArrowRight" ||
+                              e.key === "ArrowUp" ||
+                              e.key === "ArrowDown" ||
+                              e.key === "Home" ||
+                              e.key === "End"
+                            ) {
+                              schedulePolaroidPreview();
+                            }
+                          }}
+                          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-white max-lg:mt-0.5 max-lg:h-2 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white max-sm:h-1.5 max-sm:[&::-webkit-slider-thumb]:h-2.5 max-sm:[&::-webkit-slider-thumb]:w-2.5"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="mb-3 max-lg:mb-0 max-sm:mb-0">
-                  <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-white/40 max-lg:mb-1.5 max-lg:text-[10px] max-lg:tracking-[0.14em] max-sm:mb-1 max-sm:text-[9px] max-sm:leading-tight">
-                    BACKGROUND COLOR
+                  <div className="mb-3 max-lg:mb-0 max-sm:mb-0">
+                    <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-white/40 max-lg:mb-1.5 max-lg:text-[10px] max-lg:tracking-[0.14em] max-sm:mb-1 max-sm:text-[9px] max-sm:leading-tight">
+                      BACKGROUND COLOR
+                    </div>
+                    <div className="flex flex-wrap gap-2 max-lg:gap-2 max-sm:gap-1.5">
+                      {POLAROID_BG_SWATCHES.map((c, i) => (
+                        <button
+                          key={c.value}
+                          type="button"
+                          className={`bg-swatch ${polaroidExportBg === c.value ? "active-bg" : ""}`}
+                          data-color={c.value}
+                          style={{ backgroundColor: c.value }}
+                          title={`${c.name} · ${i < POLAROID_BG_DARK_COUNT ? "dark" : "light"}`}
+                          onClick={() => {
+                            polaroidExportBgRef.current = c.value;
+                            setPolaroidExportBg(c.value);
+                            schedulePolaroidPreview();
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 max-lg:gap-2 max-sm:gap-1.5">
-                    {POLAROID_BG_SWATCHES.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        className={`bg-swatch ${polaroidExportBg === c ? "active-bg" : ""}`}
-                        data-color={c}
-                        style={{ backgroundColor: c }}
-                        title={c}
-                        onClick={() => {
-                          polaroidExportBgRef.current = c;
-                          setPolaroidExportBg(c);
-                          schedulePolaroidPreview();
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
 
-                <label className="mb-4 block max-lg:mb-0 max-sm:mb-0">
-                  <div className="mb-1.5 flex items-baseline justify-between gap-2 max-lg:mb-1.5 max-sm:mb-1">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-white/40 max-lg:text-[10px] max-lg:tracking-[0.14em] max-sm:text-[9px] max-sm:leading-tight">
-                      CAPTION
-                    </span>
-                    <span
-                      className={`tabular-nums text-[11px] max-lg:text-[10px] max-sm:text-[9px] ${
-                        POLAROID_NOTE_MAX_CHARS - polaroidNoteInput.length === 0
-                          ? "text-red-400/90"
-                          : POLAROID_NOTE_MAX_CHARS -
-                                polaroidNoteInput.length <=
-                              10
-                            ? "text-orange-400/90"
-                            : "text-white/50"
-                      }`}
-                      aria-live="polite"
-                      aria-label={`${POLAROID_NOTE_MAX_CHARS - polaroidNoteInput.length} characters remaining of ${POLAROID_NOTE_MAX_CHARS}`}
-                    >
-                      {POLAROID_NOTE_MAX_CHARS - polaroidNoteInput.length}
-                    </span>
-                  </div>
-                  <textarea
-                    id="polaroid-note"
-                    value={polaroidNoteInput}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      polaroidNoteRef.current = v;
-                      setPolaroidNoteInput(v);
-                      schedulePolaroidPreview();
-                    }}
-                    rows={2}
-                    maxLength={POLAROID_NOTE_MAX_CHARS}
-                    className="w-full resize-none rounded-md border border-white/12 bg-black/25 px-3 py-2 text-sm leading-relaxed text-white placeholder:text-white/30 outline-none focus:border-white/25 max-lg:px-2.5 max-lg:py-2 max-lg:text-[12px] max-lg:leading-snug max-sm:px-2 max-sm:py-1.5 max-sm:text-[11px] max-sm:leading-snug"
-                    placeholder="my little note"
-                  />
-                </label>
+                  <label className="mb-4 block max-lg:mb-0 max-sm:mb-0">
+                    <div className="mb-1.5 flex items-baseline justify-between gap-2 max-lg:mb-1.5 max-sm:mb-1">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-white/40 max-lg:text-[10px] max-lg:tracking-[0.14em] max-sm:text-[9px] max-sm:leading-tight">
+                        CAPTION
+                      </span>
+                      <span
+                        className={`tabular-nums text-[11px] max-lg:text-[10px] max-sm:text-[9px] ${
+                          POLAROID_NOTE_MAX_CHARS - polaroidNoteInput.length ===
+                          0
+                            ? "text-red-400/90"
+                            : POLAROID_NOTE_MAX_CHARS -
+                                  polaroidNoteInput.length <=
+                                10
+                              ? "text-orange-400/90"
+                              : "text-white/50"
+                        }`}
+                        aria-live="polite"
+                        aria-label={`${POLAROID_NOTE_MAX_CHARS - polaroidNoteInput.length} characters remaining of ${POLAROID_NOTE_MAX_CHARS}`}
+                      >
+                        {POLAROID_NOTE_MAX_CHARS - polaroidNoteInput.length}
+                      </span>
+                    </div>
+                    <textarea
+                      id="polaroid-note"
+                      value={polaroidNoteInput}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        polaroidNoteRef.current = v;
+                        setPolaroidNoteInput(v);
+                        schedulePolaroidPreview();
+                      }}
+                      rows={2}
+                      maxLength={POLAROID_NOTE_MAX_CHARS}
+                      className="w-full resize-none rounded-md border border-white/12 bg-black/25 px-3 py-2 text-sm leading-relaxed text-white placeholder:text-white/30 outline-none focus:border-white/25 max-lg:px-2.5 max-lg:py-2 max-lg:text-[12px] max-lg:leading-snug max-sm:px-2 max-sm:py-1.5 max-sm:text-[11px] max-sm:leading-snug"
+                      placeholder="my little note"
+                    />
+                  </label>
                 </div>
 
                 <button
