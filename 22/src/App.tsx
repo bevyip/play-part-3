@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -9,7 +10,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Hands, Results } from "@mediapipe/hands";
 import { Camera } from "@mediapipe/camera_utils";
-import { Palette, Loader2, X } from "lucide-react";
+import { Palette, Loader2, Trash2, X } from "lucide-react";
 
 const COLORS = [
   { name: "rose", value: "#FFB3BA" },
@@ -33,6 +34,22 @@ const FINISH_PALM_HOLD_MS = 1000;
 const RIGHT_FINGER_EXTEND_NORM = 0.015;
 const RIGHT_THUMB_SPREAD_NORM = 0.018;
 
+/** Right-index screen follow: higher = closer to raw hand (1 = none). */
+const RIGHT_INDEX_SMOOTH_ALPHA = 0.78;
+/** Consecutive frames before a hand gesture updates draw state (was 5). */
+const GESTURE_STABLE_FRAMES = 3;
+/** Min px between stroke samples (smaller = denser line, follows tight curves). */
+const DRAW_SAMPLE_MIN_PX = 2.5;
+
+/** Second tap within this window (same mesh) opens delete instead of share. */
+const TOUCH_DELETE_DOUBLE_TAP_MS = 400;
+const TOUCH_DELETE_DOUBLE_TAP_MAX_PX = 56;
+/**
+ * Single-tap share must fire *after* the double-tap window ends, otherwise the first
+ * tap’s timer opens the polaroid before the second tap can cancel it.
+ */
+const TOUCH_POLAROID_TAP_DELAY_MS = TOUCH_DELETE_DOUBLE_TAP_MS + 180;
+
 /** Polaroid 3D export backdrop: four dark, then four light. */
 const POLAROID_BG_DARK_COUNT = 4;
 
@@ -48,6 +65,28 @@ const POLAROID_BG_SWATCHES: { value: string; name: string }[] = [
 ];
 
 const DEFAULT_POLAROID_EXPORT_BG = POLAROID_BG_SWATCHES[0]!.value;
+
+const scratchVecDelete = new THREE.Vector3();
+
+/**
+ * Screen-space point at the mesh pivot (world origin = stroke centroid).
+ * Stays fixed while the shape’s idle spin runs; only moves when the mesh is
+ * moved or the camera orbits/zooms.
+ */
+function getMeshScreenCenterForMesh(
+  mesh: THREE.Mesh,
+  camera: THREE.Camera,
+  canvasRect: DOMRect,
+): { x: number; y: number } | null {
+  mesh.getWorldPosition(scratchVecDelete);
+  scratchVecDelete.project(camera);
+  if (scratchVecDelete.z < -1 || scratchVecDelete.z > 1) return null;
+  const x =
+    (scratchVecDelete.x * 0.5 + 0.5) * canvasRect.width + canvasRect.left;
+  const y =
+    (-scratchVecDelete.y * 0.5 + 0.5) * canvasRect.height + canvasRect.top;
+  return { x, y };
+}
 
 /** Pauses idle spin on main-scene meshes while an offscreen polaroid render runs. */
 let polaroidSnapshotInProgress = false;
@@ -481,6 +520,11 @@ export default function App() {
   const [polaroidNoteInput, setPolaroidNoteInput] = useState("");
   const [polaroidPreview, setPolaroidPreview] = useState("");
 
+  const [objectDeleteOpen, setObjectDeleteOpen] = useState(false);
+  const objectDeleteMeshRef = useRef<THREE.Mesh | null>(null);
+  const objectDeleteUiActiveRef = useRef(false);
+  const objectDeleteWrapRef = useRef<HTMLDivElement | null>(null);
+
   const schedulePolaroidPreview = useCallback(() => {
     const mesh = polaroidMeshRef.current;
     if (!mesh) return;
@@ -514,6 +558,9 @@ export default function App() {
   }, [polaroidOpen, schedulePolaroidPreview]);
 
   openPolaroidModalRef.current = (mesh: THREE.Mesh) => {
+    objectDeleteMeshRef.current = null;
+    objectDeleteUiActiveRef.current = false;
+    setObjectDeleteOpen(false);
     polaroidMeshRef.current = mesh;
     polaroidExportBgRef.current = DEFAULT_POLAROID_EXPORT_BG;
     polaroidAngleYRef.current = 20;
@@ -597,6 +644,28 @@ export default function App() {
         }
       });
 
+      const delWrap = objectDeleteWrapRef.current;
+      if (objectDeleteUiActiveRef.current && delWrap) {
+        const delMesh = objectDeleteMeshRef.current;
+        if (!delMesh || !meshesRef.current.includes(delMesh)) {
+          objectDeleteUiActiveRef.current = false;
+          objectDeleteMeshRef.current = null;
+          delWrap.style.display = "none";
+          setObjectDeleteOpen(false);
+        } else {
+          const rect = canvasEl.getBoundingClientRect();
+          const p = getMeshScreenCenterForMesh(delMesh, camera, rect);
+          if (p) {
+            delWrap.style.display = "block";
+            delWrap.style.position = "fixed";
+            delWrap.style.left = `${p.x}px`;
+            delWrap.style.top = `${p.y}px`;
+            delWrap.style.transform = "translate(-50%, -50%)";
+            delWrap.style.zIndex = "60";
+          }
+        }
+      }
+
       renderer.render(scene, camera);
     };
     animate();
@@ -626,6 +695,14 @@ export default function App() {
     };
     let primaryPointerDown = false;
     const canvasEl = renderer.domElement;
+
+    let touchPolaroidDelayTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastObjectTapForDelete: {
+      t: number;
+      x: number;
+      y: number;
+      mesh: THREE.Mesh;
+    } | null = null;
 
     const raycastMeshesAtClient = (clientX: number, clientY: number) => {
       const rect = canvasEl.getBoundingClientRect();
@@ -681,12 +758,59 @@ export default function App() {
       if (dx * dx + dy * dy > CLICK_MAX_MOVE_PX * CLICK_MAX_MOVE_PX) return;
 
       const hits = raycastMeshesAtClient(e.clientX, e.clientY);
-      if (hits.length > 0) {
-        const hit = hits[0].object;
-        if (hit instanceof THREE.Mesh) {
-          openPolaroidModalRef.current(hit);
-        }
+      if (hits.length === 0) return;
+      const hit = hits[0]!.object;
+      if (!(hit instanceof THREE.Mesh)) return;
+
+      const tier = previewLayoutRef.current.tier;
+      const useTouchTapChord = tier !== "desktop";
+
+      if (!useTouchTapChord) {
+        openPolaroidModalRef.current(hit);
+        return;
       }
+
+      const now = performance.now();
+      const lt = lastObjectTapForDelete;
+      const dist = lt
+        ? Math.hypot(e.clientX - lt.x, e.clientY - lt.y)
+        : TOUCH_DELETE_DOUBLE_TAP_MAX_PX + 1;
+
+      if (
+        lt &&
+        lt.mesh === hit &&
+        now - lt.t < TOUCH_DELETE_DOUBLE_TAP_MS &&
+        dist < TOUCH_DELETE_DOUBLE_TAP_MAX_PX
+      ) {
+        if (touchPolaroidDelayTimer) {
+          clearTimeout(touchPolaroidDelayTimer);
+          touchPolaroidDelayTimer = null;
+        }
+        lastObjectTapForDelete = null;
+        polaroidMeshRef.current = null;
+        setPolaroidOpen(false);
+        objectDeleteMeshRef.current = hit;
+        objectDeleteUiActiveRef.current = true;
+        setObjectDeleteOpen(true);
+        return;
+      }
+
+      if (touchPolaroidDelayTimer) {
+        clearTimeout(touchPolaroidDelayTimer);
+        touchPolaroidDelayTimer = null;
+      }
+      lastObjectTapForDelete = {
+        t: now,
+        x: e.clientX,
+        y: e.clientY,
+        mesh: hit,
+      };
+      const meshForShare = hit;
+      touchPolaroidDelayTimer = setTimeout(() => {
+        touchPolaroidDelayTimer = null;
+        lastObjectTapForDelete = null;
+        openPolaroidModalRef.current(meshForShare);
+      }, TOUCH_POLAROID_TAP_DELAY_MS);
     };
 
     const onPointerCancel = (e: PointerEvent) => {
@@ -696,6 +820,11 @@ export default function App() {
       }
       primaryPointerDown = false;
       canvasEl.style.cursor = "";
+      if (touchPolaroidDelayTimer) {
+        clearTimeout(touchPolaroidDelayTimer);
+        touchPolaroidDelayTimer = null;
+      }
+      lastObjectTapForDelete = null;
     };
 
     const onPointerMove = (e: PointerEvent) => {
@@ -706,18 +835,50 @@ export default function App() {
       canvasEl.style.cursor = "";
     };
 
+    const onContextMenu = (e: MouseEvent) => {
+      const hits = raycastMeshesAtClient(e.clientX, e.clientY);
+      if (hits.length === 0) return;
+      e.preventDefault();
+      const hit = hits[0]!.object;
+      if (!(hit instanceof THREE.Mesh)) return;
+      objectDeleteMeshRef.current = hit;
+      objectDeleteUiActiveRef.current = true;
+      setObjectDeleteOpen(true);
+    };
+
+    const onRightPointerDownCapture = (e: PointerEvent) => {
+      if (e.button !== 2) return;
+      const hits = raycastMeshesAtClient(e.clientX, e.clientY);
+      if (hits.length === 0) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    };
+
     canvasEl.addEventListener("pointerdown", onPointerDown);
     canvasEl.addEventListener("pointerup", onPointerUp);
     canvasEl.addEventListener("pointercancel", onPointerCancel);
     canvasEl.addEventListener("pointermove", onPointerMove);
     canvasEl.addEventListener("pointerleave", onPointerLeave);
+    canvasEl.addEventListener("contextmenu", onContextMenu);
+    canvasEl.addEventListener("pointerdown", onRightPointerDownCapture, true);
 
     return () => {
+      if (touchPolaroidDelayTimer) {
+        clearTimeout(touchPolaroidDelayTimer);
+        touchPolaroidDelayTimer = null;
+      }
+      lastObjectTapForDelete = null;
       canvasEl.removeEventListener("pointerdown", onPointerDown);
       canvasEl.removeEventListener("pointerup", onPointerUp);
       canvasEl.removeEventListener("pointercancel", onPointerCancel);
       canvasEl.removeEventListener("pointermove", onPointerMove);
       canvasEl.removeEventListener("pointerleave", onPointerLeave);
+      canvasEl.removeEventListener("contextmenu", onContextMenu);
+      canvasEl.removeEventListener(
+        "pointerdown",
+        onRightPointerDownCapture,
+        true,
+      );
       canvasEl.style.cursor = "";
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
@@ -946,7 +1107,82 @@ export default function App() {
     extrudeTriggeredRef.current = false;
     candidateGestureRef.current = "IDLE";
     candidateCountRef.current = 0;
+
+    objectDeleteMeshRef.current = null;
+    objectDeleteUiActiveRef.current = false;
+    setObjectDeleteOpen(false);
   }, [clear2DCanvas]);
+
+  const removeMeshFromScene = useCallback((mesh: THREE.Mesh) => {
+    const scene = sceneRef.current;
+    if (!scene || !meshesRef.current.includes(mesh)) return;
+
+    if (grabbedMeshRef.current === mesh) {
+      const gMat = grabbedMeshRef.current
+        .material as THREE.MeshStandardMaterial;
+      gMat.emissive.setHex(0x000000);
+      grabbedMeshRef.current = null;
+      isGrabActiveRef.current = false;
+      suppressRightHandGesturesRef.current = false;
+      rightPinchLockedRef.current = false;
+      rightPinchSmoothedRef.current = 60;
+    }
+
+    scene.remove(mesh);
+    mesh.geometry.dispose();
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    mat.dispose();
+    meshesRef.current = meshesRef.current.filter((m) => m !== mesh);
+
+    if (polaroidMeshRef.current === mesh) {
+      polaroidMeshRef.current = null;
+      setPolaroidOpen(false);
+    }
+
+    objectDeleteMeshRef.current = null;
+    objectDeleteUiActiveRef.current = false;
+    setObjectDeleteOpen(false);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!objectDeleteOpen) return;
+    const mesh = objectDeleteMeshRef.current;
+    const cam = cameraRef.current;
+    const canvas = canvas3DRef.current;
+    const wrap = objectDeleteWrapRef.current;
+    if (!mesh || !cam || !canvas || !wrap) return;
+    const rect = canvas.getBoundingClientRect();
+    const p = getMeshScreenCenterForMesh(mesh, cam, rect);
+    if (!p) return;
+    wrap.style.display = "block";
+    wrap.style.position = "fixed";
+    wrap.style.left = `${p.x}px`;
+    wrap.style.top = `${p.y}px`;
+    wrap.style.transform = "translate(-50%, -50%)";
+    wrap.style.zIndex = "60";
+  }, [objectDeleteOpen]);
+
+  useEffect(() => {
+    if (!objectDeleteOpen) return;
+    const onDocPointerDown = (e: PointerEvent) => {
+      if (objectDeleteWrapRef.current?.contains(e.target as Node)) return;
+      objectDeleteMeshRef.current = null;
+      objectDeleteUiActiveRef.current = false;
+      setObjectDeleteOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      objectDeleteMeshRef.current = null;
+      objectDeleteUiActiveRef.current = false;
+      setObjectDeleteOpen(false);
+    };
+    document.addEventListener("pointerdown", onDocPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onDocPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [objectDeleteOpen]);
 
   // Initialize MediaPipe
   useEffect(() => {
@@ -1311,10 +1547,11 @@ export default function App() {
         if (!smoothedCursorRef.current) {
           smoothedCursorRef.current = rawRightIndexTip.clone();
         } else {
+          const a = RIGHT_INDEX_SMOOTH_ALPHA;
           smoothedCursorRef.current.x +=
-            0.35 * (rawRightIndexTip.x - smoothedCursorRef.current.x);
+            a * (rawRightIndexTip.x - smoothedCursorRef.current.x);
           smoothedCursorRef.current.y +=
-            0.35 * (rawRightIndexTip.y - smoothedCursorRef.current.y);
+            a * (rawRightIndexTip.y - smoothedCursorRef.current.y);
         }
         rightIndexPos = smoothedCursorRef.current.clone();
 
@@ -1444,7 +1681,7 @@ export default function App() {
             }
 
             if (
-              candidateCountRef.current >= 5 &&
+              candidateCountRef.current >= GESTURE_STABLE_FRAMES &&
               stateRef.current !== candidateGestureRef.current
             ) {
               const prevState = stateRef.current;
@@ -1467,7 +1704,7 @@ export default function App() {
               const lastPoint = points[points.length - 1];
               const dx = rightIndexPos.x - lastPoint.x;
               const dy = rightIndexPos.y - lastPoint.y;
-              if (Math.sqrt(dx * dx + dy * dy) > 4) {
+              if (Math.sqrt(dx * dx + dy * dy) > DRAW_SAMPLE_MIN_PX) {
                 points.push(rightIndexPos);
               }
             }
@@ -1599,11 +1836,14 @@ export default function App() {
             <span>DRAG to rotate</span>
             {previewLayout.tier === "desktop" ? (
               <>
-                <span>RIGHT-CLICK to pan</span>
-                <span>LEFT-CLICK to share object</span>
+                <span>LEFT-CLICK object to share</span>
+                <span>RIGHT-CLICK: (on canvas) pan, (on object) delete</span>
               </>
             ) : (
-              <span>TAP to share object</span>
+              <>
+                <span>TAP object to share</span>
+                <span>DOUBLE-TAP object to delete</span>
+              </>
             )}
           </div>
         </div>
@@ -1619,6 +1859,34 @@ export default function App() {
           ref={canvas2DRef}
           className="absolute inset-0 w-full h-full pointer-events-none"
         />
+
+        {objectDeleteOpen ? (
+          <div
+            ref={objectDeleteWrapRef}
+            className="pointer-events-none fixed left-0 top-0"
+          >
+            <button
+              type="button"
+              className="pointer-events-auto group inline-flex h-7 w-7 cursor-pointer select-none items-center justify-center overflow-hidden rounded-full border border-white/25 bg-black/80 text-white shadow-lg backdrop-blur-md transition-[width,min-width,padding,gap] duration-200 ease-out hover:w-auto hover:min-w-[5.25rem] hover:gap-1.5 hover:px-2.5"
+              aria-label="Delete this shape"
+              onClick={(e) => {
+                e.stopPropagation();
+                const m = objectDeleteMeshRef.current;
+                if (m) removeMeshFromScene(m);
+              }}
+            >
+              <Trash2
+                size={14}
+                strokeWidth={2.25}
+                className="shrink-0"
+                aria-hidden
+              />
+              <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-medium opacity-0 transition-[max-width,opacity,margin] duration-200 ease-out group-hover:ml-0 group-hover:max-w-[3.25rem] group-hover:opacity-100">
+                delete?
+              </span>
+            </button>
+          </div>
+        ) : null}
 
         {/* Polaroid export modal — full-bleed absolute inside canvas area (not fixed) */}
         <div
