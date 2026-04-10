@@ -2106,24 +2106,30 @@ export default function App() {
                   onClick={async () => {
                     const mesh = polaroidMeshRef.current;
                     if (!mesh) return;
-                    const angleY = polaroidAngleYRef.current;
-                    const angleX = polaroidAngleXRef.current;
-                    const bg = polaroidExportBgRef.current;
-                    const render = renderShapeToDataURL(
-                      mesh,
-                      bg,
-                      angleY,
-                      angleX,
-                    );
-                    const dataURL = await buildPolaroid(
-                      render,
-                      polaroidNoteInput,
-                      bg,
-                    );
-                    const a = document.createElement("a");
-                    a.href = dataURL;
-                    a.download = "art.png";
-                    a.click();
+                    try {
+                      const angleY = polaroidAngleYRef.current;
+                      const angleX = polaroidAngleXRef.current;
+                      const bg = polaroidExportBgRef.current;
+                      const render = renderShapeToDataURL(
+                        mesh,
+                        bg,
+                        angleY,
+                        angleX,
+                      );
+                      const dataURL = await buildPolaroid(
+                        render,
+                        polaroidNoteInput,
+                        bg,
+                      );
+                      const a = document.createElement("a");
+                      a.href = dataURL;
+                      a.download = "art.png";
+                      a.click();
+                      polaroidMeshRef.current = null;
+                      setPolaroidOpen(false);
+                    } catch (err) {
+                      console.error("Save PNG failed:", err);
+                    }
                   }}
                   className="mt-auto w-full shrink-0 rounded-lg bg-white/90 py-2.5 text-sm font-medium leading-snug text-neutral-900 transition-colors hover:bg-white max-lg:py-2 max-lg:text-xs max-sm:py-2 max-sm:text-[11px] lg:mt-0"
                 >
