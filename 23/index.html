@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mattie Studio — Website Builder</title>
+  <link rel="icon" type="image/png" href="img/shopify-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="app">
+    <header class="toolbar">
+      <div class="toolbar-logo">
+        <img src="img/shopify-logo.png" alt="Shopify" width="22" height="22" />
+        Shopify Website Builder
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-ghost">Preview</button>
+        <div class="badge-draft"><span class="dot"></span> Save draft</div>
+        <button type="button" class="btn-publish">Publish</button>
+      </div>
+    </header>
+
+    <div class="workspace" id="workspace">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <button type="button" class="theme-select" aria-haspopup="listbox">
+            <span>Theme · Horizon</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="#6b6b8a" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </button>
+          <div class="tab-pills">
+            <button type="button" class="tab-pill">Theme</button>
+            <button type="button" class="tab-pill active">Sections</button>
+          </div>
+        </div>
+        <nav class="section-tree" id="sectionTree" aria-label="Section hierarchy"></nav>
+      </aside>
+
+      <main class="canvas-area" id="canvasArea">
+        <div class="browser-chrome">
+          <div class="browser-bar">
+            <span class="browser-dot"></span>
+            <span class="browser-dot"></span>
+            <span class="browser-dot"></span>
+            <span class="browser-url">mattie-studio.myshopify.com</span>
+          </div>
+          <div class="storefront" id="storefront">
+            <!-- Nav -->
+            <section class="sf-block" data-id="header" data-label="Header" data-type="section">
+              <div class="component-label sf-chip">Header</div>
+              <header class="sf-nav">
+                <div class="sf-nav-links">
+                  <span>Shop</span>
+                  <span>About</span>
+                  <span>Journal</span>
+                </div>
+                <div class="sf-nav-logo">Mattie Studio</div>
+                <div class="sf-nav-icons">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M17 17l-4-4" />
+                  </svg>
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M6 2L3 6v12a1 1 0 001 1h10a1 1 0 001-1V6l-3-4H6z" />
+                    <path d="M3 6h14" />
+                  </svg>
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="9" cy="6" r="3" />
+                    <path d="M2 18c0-4 3-6 7-6s7 2 7 6" />
+                  </svg>
+                </div>
+              </header>
+            </section>
+
+            <!-- Hero -->
+            <section class="sf-block" data-id="hero" data-component="image-banner" data-label="Image Banner"
+              data-type="text">
+              <div class="component-label sf-chip">Image Banner</div>
+              <div class="sf-hero" data-reroll-container data-field="main-image">
+                <div class="sf-hero-content">
+                  <h1 data-field="headline">Elevate your skin care ritual</h1>
+                  <p class="sf-hero-subheadline" data-field="subheadline" style="display:none"></p>
+                  <div class="sf-hero-btns">
+                    <button type="button" class="sf-btn-primary" data-field="cta_primary">Shop now</button>
+                    <button type="button" class="sf-btn-secondary" data-field="cta_secondary">Learn more</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Products -->
+            <section class="sf-block" data-id="products" data-component="featured-collection"
+              data-label="Featured Collection" data-type="section">
+              <div class="component-label sf-chip">Featured Collection</div>
+              <div class="sf-products" data-reroll-container>
+                <h2 class="sf-section-title" data-field="headline">Bestsellers</h2>
+                <div class="sf-product-grid">
+                  <article class="sf-product-card">
+                    <div class="sf-product-img"><img data-reroll-img data-field="main-image"
+                        src="img/featured-collection/a-1.png"
+                        alt="Glow Serum" width="240" height="320" /></div>
+                    <p class="sf-product-name">Glow Serum</p>
+                    <p class="sf-product-price">$48.00</p>
+                  </article>
+                  <article class="sf-product-card">
+                    <div class="sf-product-img"><img data-reroll-img src="img/featured-collection/a-2.png"
+                        alt="Renewal Cream" width="240" height="320" />
+                    </div>
+                    <p class="sf-product-name">Renewal Cream</p>
+                    <p class="sf-product-price">$62.00</p>
+                  </article>
+                  <article class="sf-product-card">
+                    <div class="sf-product-img"><img data-reroll-img src="img/featured-collection/a-3.png"
+                        alt="Botanical Mist" width="240" height="320" />
+                    </div>
+                    <p class="sf-product-name">Botanical Mist</p>
+                    <p class="sf-product-price">$36.00</p>
+                  </article>
+                  <article class="sf-product-card">
+                    <div class="sf-product-img"><img data-reroll-img src="img/featured-collection/a-4.png"
+                        alt="Night Oil" width="240" height="320" /></div>
+                    <p class="sf-product-name">Night Oil</p>
+                    <p class="sf-product-price">$54.00</p>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <!-- Collection banner -->
+            <section class="sf-block" data-id="collection" data-component="image-with-text" data-label="Image with Text"
+              data-type="image">
+              <div class="component-label sf-chip">Image with Text</div>
+              <div class="sf-collection">
+                <div class="sf-collection-img" data-reroll-container>
+                  <img data-reroll-img data-field="main-image" src="img/image-with-text/collection-1.png"
+                    alt="The Ritual Collection" width="560" height="400" />
+                </div>
+                <div class="sf-collection-copy">
+                  <h2 data-field="headline">The Ritual Collection</h2>
+                  <p data-field="subheadline">Curated essentials for morning calm and evening restoration. Clean formulas,
+                    sensorial textures, and results you can feel.</p>
+                  <a href="#">Explore the collection</a>
+                </div>
+              </div>
+            </section>
+
+            <!-- Testimonials -->
+            <section class="sf-block" data-id="testimonials" data-component="testimonials" data-label="Testimonials"
+              data-type="section">
+              <div class="component-label sf-chip">Testimonials</div>
+              <div class="sf-testimonials">
+                <h2 class="sf-section-title">Loved by our community</h2>
+                <div class="sf-testimonial-grid" data-reroll-container>
+                  <div class="sf-testimonial-card" data-field="review-card">
+                    <div class="sf-stars">★★★★★</div>
+                    <p class="sf-testimonial-text" data-field="review-quote">"This changed my entire morning routine. My
+                      skin has never looked better."</p>
+                    <p class="sf-testimonial-author" data-field="review-author">— Jamie K.</p>
+                  </div>
+                  <div class="sf-testimonial-card" data-field="review-card">
+                    <div class="sf-stars">★★★★★</div>
+                    <p class="sf-testimonial-text" data-field="review-quote">"I've tried every luxury skincare brand.
+                      Mattie Studio is the one I keep coming back to."</p>
+                    <p class="sf-testimonial-author" data-field="review-author">— Priya M.</p>
+                  </div>
+                  <div class="sf-testimonial-card" data-field="review-card">
+                    <div class="sf-stars">★★★★★</div>
+                    <p class="sf-testimonial-text" data-field="review-quote">"Worth every penny. The texture is unlike
+                      anything else I've used."</p>
+                    <p class="sf-testimonial-author" data-field="review-author">— Sarah L.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Footer -->
+            <section class="sf-block" data-id="footer" data-component="footer" data-label="Footer" data-type="section">
+              <div class="component-label sf-chip">Footer</div>
+              <footer class="sf-footer" data-reroll-container>
+                <div class="sf-footer-grid">
+                  <div>
+                    <p class="sf-footer-brand">Mattie Studio</p>
+                    <p class="sf-footer-tagline" data-field="subheadline">Small-batch skincare. Made with intention.</p>
+                    <ul class="sf-footer-reroll-links">
+                      <li>Shipping &amp; Returns</li>
+                      <li>Ingredients</li>
+                      <li>Our Story</li>
+                      <li>Stockists</li>
+                      <li>Contact</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4>Shop</h4>
+                    <ul class="sf-footer-shop-links">
+                      <li>All Products</li>
+                      <li>Collections</li>
+                      <li>Gift Sets</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4>About</h4>
+                    <ul class="sf-footer-about-links">
+                      <li>Our Story</li>
+                      <li>Ingredients</li>
+                      <li>Sustainability</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4>Help</h4>
+                    <ul class="sf-footer-help-links">
+                      <li>Contact</li>
+                      <li>Shipping</li>
+                      <li>Returns</li>
+                    </ul>
+                  </div>
+                </div>
+                <p class="sf-footer-bottom">© 2026 Mattie Studio. All rights reserved.</p>
+              </footer>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <aside class="right-panel" id="rightPanel" aria-label="Component settings">
+        <div class="panel-full" id="panelFull">
+          <div class="panel-header">
+            <h3 id="panelTitle">Settings</h3>
+            <button type="button" class="panel-close" id="panelClose" aria-label="Close panel">×</button>
+          </div>
+          <div class="panel-body" id="panelBody">
+            <div class="panel-settings-layer" id="panelSettingsLayer"></div>
+          </div>
+        </div>
+        <div class="panel-collapsed" id="panelCollapsed">
+          <div class="panel-collapsed-icon" id="panelCollapsedIcon"></div>
+          <div class="panel-collapsed-name" id="panelCollapsedName">Block</div>
+          <button type="button" class="panel-collapsed-expand" id="panelCollapsedExpand"
+            aria-label="Expand settings">‹</button>
+        </div>
+      </aside>
+
+      <aside class="lens-chat-panel persona-lens-panel" id="lensChatPanel" aria-hidden="true">
+        <div class="sidekick-header">
+          <button type="button" class="back-btn" id="lensChatBack" aria-label="Back to settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <span class="sidekick-title">Sidekick</span>
+          <button type="button" class="sidekick-close-btn" id="lensChatClose" aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="lens-chat-body">
+          <div class="lens-chat-messages" id="lensChatMessages"></div>
+          <div class="lens-chat-input-wrap">
+            <div class="lens-chat-input-inner">
+              <div class="lens-chat-input-row">
+                <input type="text" class="lens-chat-textarea" id="lensChatInput"
+                  placeholder="e.g. a mom buying a gift for her daughter" />
+                <button type="button" class="lens-chat-send" id="lensChatSend" disabled aria-label="Send">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 5v14M6 12l6-6 6 6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
