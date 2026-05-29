@@ -56,7 +56,7 @@ export const SUGGESTIONS = {
             reaction: "Beautiful, but it doesn't help me imagine giving it to someone I love.",
             insight: "A lifestyle hero that feels curated for giving removes the translation work for a buyer shopping for someone else.",
             suggestion: "Switch to a lifestyle hero that feels curated for gifting.",
-            apply: { type: "image", value: "img/image-banner/header-2.jpg" }
+            apply: { type: "image", value: "img/image-banner/header-3.jpg" }
           }
         ]
       }
@@ -107,7 +107,7 @@ export const SUGGESTIONS = {
             reaction: "Something about this hero makes me hesitate — it feels too editorial for a first visit.",
             insight: "A friendlier hero image reduces the perceived risk of exploring an unfamiliar brand.",
             suggestion: "Switch to a friendlier hero image that lowers the barrier to browsing.",
-            apply: { type: "image", value: "img/image-banner/header-2.jpg" }
+            apply: { type: "image", value: "img/image-banner/header-3.jpg" }
           }
         ]
       }
@@ -314,7 +314,7 @@ export const SUGGESTIONS = {
             reaction: "Beautiful products, but the photos don't help me picture giving them.",
             insight: "A warmer collection mood makes the emotional leap from browsing to buying easier for gift shoppers.",
             suggestion: "Switch to a warmer collection image set with a gifting mood.",
-            apply: { type: "image", optionIndex: 1 }
+            apply: { type: "image", optionIndex: 2 }
           }
         ]
       }
@@ -365,7 +365,7 @@ export const SUGGESTIONS = {
             reaction: "Beautiful but slightly intimidating — I want to feel this is for me.",
             insight: "A collection image that feels open and easy to relate to lowers the barrier for someone still deciding whether to trust the brand.",
             suggestion: "Switch to a collection image set that feels open and easy to explore.",
-            apply: { type: "image", optionIndex: 1 }
+            apply: { type: "image", optionIndex: 2 }
           }
         ]
       }
@@ -467,7 +467,7 @@ export const SUGGESTIONS = {
             reaction: "Beautiful products, but the photos don't transport me into the experience.",
             insight: "Softer light and intentional mood in the imagery help a self-care seeker project themselves into the product experience.",
             suggestion: "Switch to imagery with softer light and a more intentional mood.",
-            apply: { type: "image", optionIndex: 1 }
+            apply: { type: "image", optionIndex: 2 }
           }
         ]
       }
@@ -572,7 +572,7 @@ export const SUGGESTIONS = {
             reaction: "Beautiful, but it doesn't help me picture this in someone else's hands.",
             insight: "A lifestyle image that implies receiving rather than owning closes the gap between browsing and buying for a gift shopper.",
             suggestion: "Switch to imagery that frames the product as something worth giving.",
-            apply: { type: "image", optionIndex: 1 }
+            apply: { type: "image", optionIndex: 2 }
           }
         ]
       }
@@ -776,7 +776,7 @@ export const SUGGESTIONS = {
             reaction: "Luxury here should feel quiet — this photo competes with itself.",
             insight: "Minimal, high-end product presentation signals restraint — the most powerful luxury signal of all.",
             suggestion: "Swap to a more minimal, high-end product presentation.",
-            apply: { type: "image", optionIndex: 2 }
+            apply: { type: "image", optionIndex: 3 }
           }
         ]
       }

@@ -1925,6 +1925,25 @@ let lensSessionComponentId = null;
 const lensConversations = {};
 let lensPending = false;
 let lensAnimating = false;
+let lensTransitionId = 0;
+const LENS_DISSOLVE_MS = 280;
+const LENS_EXPAND_MS = 320;
+
+function cancelLensTransition() {
+  clearLensConversation(lensSessionComponentId);
+  lensTransitionId += 1;
+  lensAnimating = false;
+  lensOpen = false;
+  lensChatPanel.classList.remove("open");
+  lensChatPanel.setAttribute("aria-hidden", "true");
+  rightPanel.classList.remove("settings-closing");
+}
+
+function showRightPanel() {
+  rightPanel.classList.remove("settings-hidden", "settings-closing");
+  workspace.classList.add("has-right-panel");
+  rightPanel.classList.add("visible");
+}
 
 const workspace = document.getElementById("workspace");
 const sectionTree = document.getElementById("sectionTree");
@@ -2562,6 +2581,11 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+function isPersonaPillMessage(text) {
+  const trimmed = text.trim();
+  return SIDEKICK_SUGGESTION_PILLS.some((pill) => pill === trimmed);
+}
+
 function matchPersona(input) {
   const text = input.toLowerCase();
 
@@ -2618,27 +2642,33 @@ function buildDemoLensData(personaKey, componentName, isFollowUp) {
   const hasComponent = Boolean(componentId && SUGGESTIONS[componentId]);
   const suggestions = hasComponent ? getPersonaSuggestions(personaKey) : [];
 
+  const noSuggestionsMessage =
+    hasComponent && suggestions.length
+      ? null
+      : "This component doesn't have specific suggestions for this perspective — try selecting a different component on the canvas.";
+
   if (isFollowUp) {
     return {
-      introText: `I've updated the suggestions below based on your question. Try applying a direction and reroll to cycle through alternatives.`,
-      disclaimer: "✦ Demo mode — responses are fixed examples.",
+      introText: noSuggestionsMessage
+        ? null
+        : `I've updated the suggestions below based on your question. Try applying a direction and reroll to cycle through alternatives.`,
+      disclaimer: noSuggestionsMessage
+        ? null
+        : "✦ Demo mode — responses are fixed examples.",
       persona_key: personaKey,
       suggestions,
-      noSuggestionsMessage: hasComponent
-        ? null
-        : "This component doesn't have specific suggestions for this perspective — try selecting a different component on the canvas.",
+      noSuggestionsMessage,
       isFollowUp: true,
     };
   }
 
   return {
-    introText: `Here's how a ${personaKey} would experience your ${componentName}:`,
+    introText: noSuggestionsMessage
+      ? null
+      : `Here's how a ${personaKey} would experience your ${componentName}:`,
     persona_key: personaKey,
     suggestions,
-    noSuggestionsMessage:
-      hasComponent && suggestions.length
-        ? null
-        : "This component doesn't have specific suggestions for this perspective — try selecting a different component on the canvas.",
+    noSuggestionsMessage,
     isFollowUp: false,
   };
 }
@@ -2769,30 +2799,6 @@ function scrollLensChatToElement(el, options = {}) {
       container.scrollTop = Math.max(0, elTop - padding);
     }
   });
-}
-
-function scrollLensChatToLatestResponse(onlyIfNearBottom = true) {
-  const lastGroup = lensChatMessages.querySelector(
-    ".chat-ai-group:last-of-type",
-  );
-  if (lastGroup) {
-    scrollLensChatToElement(lastGroup, { onlyIfNearBottom, align: "end" });
-  } else {
-    scrollLensChatToBottom(onlyIfNearBottom);
-  }
-}
-
-function renderLensChatFromHistory(conv, top) {
-  lensChatMessages
-    .querySelectorAll(".chat-msg-user, .chat-ai-group, .chat-msg-loading")
-    .forEach((el) => el.remove());
-  renderSidekickOpening(top, false);
-  conv.messages.forEach((msg) => {
-    if (msg.role === "user") appendUserBubble(msg.content, false);
-    else if (msg.role === "assistant") appendAIGroup(msg.data, false);
-  });
-  updateLensInputPlaceholder(conv);
-  scrollLensChatToLatestResponse(false);
 }
 
 function appendUserBubble(text, scroll = false) {
@@ -3005,10 +3011,10 @@ function buildDirectionCard(
   if (personaKey) card.dataset.personaKey = personaKey;
   card._suggestionsPool = suggestionsPool;
   card.innerHTML = `
-        <div class="chat-card-top">
+        <header class="chat-card-top">
           <span class="chat-card-label"></span>
           <button type="button" class="btn-undo" hidden aria-label="Undo applied changes">Undo</button>
-        </div>
+        </header>
         <div class="chat-card-body">
           <section class="chat-card-section chat-card-section-current">
             <span class="chat-card-section-label">Current</span>
@@ -3023,12 +3029,14 @@ function buildDirectionCard(
             <div class="chat-card-preview"></div>
           </section>
         </div>
-        <div class="chat-card-tags"></div>
-        <div class="card-actions">
-          <button type="button" class="btn-apply">Apply</button>
-          <button type="button" class="btn-applied-status" hidden disabled>✓ Applied</button>
-          <button type="button" class="btn-reroll" hidden>↺ Try another option</button>
-        </div>`;
+        <footer class="chat-card-footer">
+          <div class="chat-card-tags"></div>
+          <div class="card-actions">
+            <button type="button" class="btn-apply">Apply</button>
+            <button type="button" class="btn-applied-status" hidden disabled>✓ Applied</button>
+            <button type="button" class="btn-reroll" hidden>↺ Try another option</button>
+          </div>
+        </footer>`;
 
   const rerollBtn = card.querySelector(".btn-reroll");
   if (!item.variants?.length) {
@@ -3056,11 +3064,15 @@ function appendAIGroup(data, scroll = true) {
   }
 
   if (data.noSuggestionsMessage) {
-    group.appendChild(
-      createAIMessageRow(
-        `<div class="chat-intro-text">${escapeHtml(data.noSuggestionsMessage)}</div>`,
-      ),
-    );
+    const msgHtml = `<div class="chat-no-suggestions-text">${escapeHtml(data.noSuggestionsMessage)}</div>`;
+    const introRow = introHtml ? group.querySelector(".ai-message-row") : null;
+    if (introRow) {
+      introRow
+        .querySelector(".ai-message-content")
+        ?.insertAdjacentHTML("beforeend", msgHtml);
+    } else {
+      group.appendChild(createAIMessageRow(msgHtml));
+    }
   }
 
   const suggestions = data.suggestions || [];
@@ -3137,6 +3149,17 @@ function appendLoadingBubble() {
   return el;
 }
 
+function resetLensChatDOM(componentId) {
+  if (!lensChatMessages || !componentId) return;
+  const top = COMPONENTS.find((c) => c.id === componentId);
+  if (!top) return;
+  lensChatMessages
+    .querySelectorAll(".chat-msg-user, .chat-ai-group, .chat-msg-loading")
+    .forEach((el) => el.remove());
+  renderSidekickOpening(top, false);
+  updateLensInputPlaceholder(getLensConversation(componentId));
+}
+
 function clearLensConversation(componentId) {
   if (componentId) {
     lensConversations[componentId] = { messages: [], matchedPersona: null };
@@ -3146,6 +3169,7 @@ function clearLensConversation(componentId) {
     lensChatInput.value = "";
     lensChatSend.disabled = true;
   }
+  resetLensChatDOM(componentId);
 }
 
 function submitLensMessage(text) {
@@ -3166,7 +3190,7 @@ function submitLensMessage(text) {
   appendUserBubble(trimmed, true);
   conv.messages.push({ role: "user", content: trimmed });
 
-  if (!isFollowUp) {
+  if (!isFollowUp || isPersonaPillMessage(trimmed)) {
     conv.matchedPersona = matchPersona(trimmed);
   }
   const personaKey = conv.matchedPersona || matchPersona(trimmed);
@@ -3188,63 +3212,54 @@ function openLens() {
   if (!currentPanelMeta || lensOpen || lensAnimating) return;
   const top = getTopComponentMeta(currentPanelMeta.id);
   const canvasId = top.id;
+  const transitionId = (lensTransitionId += 1);
 
   lensAnimating = true;
   lensOpen = true;
   lensSessionComponentId = canvasId;
 
-  workspace.classList.add("lens-closing-settings");
   rightPanel.classList.add("settings-closing");
 
   setTimeout(() => {
+    if (transitionId !== lensTransitionId) return;
+    lensChatPanel.classList.add("open");
+    lensChatPanel.setAttribute("aria-hidden", "false");
+  }, 100);
+
+  setTimeout(() => {
+    if (transitionId !== lensTransitionId) return;
     rightPanel.classList.add("settings-hidden");
     rightPanel.classList.remove("settings-closing");
 
-    lensChatPanel.classList.add("open");
-    lensChatPanel.setAttribute("aria-hidden", "false");
-
-    workspace.classList.remove("lens-closing-settings");
-    workspace.classList.add("lens-open");
-
-    renderLensChatFromHistory(getLensConversation(canvasId), top);
-
-    lensChatInput.value = "";
-    lensChatSend.disabled = true;
-    updateLensInputPlaceholder(getLensConversation(canvasId));
+    const conv = getLensConversation(canvasId);
+    if (!lensChatMessages.querySelector(".sidekick-opening")) {
+      renderSidekickOpening(top, false);
+    }
+    updateLensInputPlaceholder(conv);
     lensAnimating = false;
-  }, 200);
+  }, LENS_DISSOLVE_MS);
 }
 
-function closeLens() {
+function closeLens(options = {}) {
+  const revealSettings = options.revealSettings !== false;
   clearLensConversation(lensSessionComponentId);
 
-  if ((!lensOpen && !lensChatPanel.classList.contains("open")) || lensAnimating)
-    return;
+  if (!lensOpen && !lensChatPanel.classList.contains("open")) return;
 
+  const transitionId = (lensTransitionId += 1);
   lensAnimating = true;
   lensOpen = false;
 
-  workspace.classList.remove("lens-open");
-  workspace.classList.add("lens-closing-lens");
   lensChatPanel.classList.remove("open");
 
   setTimeout(() => {
-    rightPanel.classList.remove("settings-hidden");
-    rightPanel.classList.add("settings-opening");
-    workspace.classList.remove("lens-closing-lens");
+    if (transitionId !== lensTransitionId) return;
     lensChatPanel.setAttribute("aria-hidden", "true");
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        rightPanel.classList.remove("settings-opening");
-      });
-    });
-
-    setTimeout(() => {
-      lensPending = false;
-      lensAnimating = false;
-    }, 220);
-  }, 200);
+    if (revealSettings) {
+      rightPanel.classList.remove("settings-hidden");
+    }
+    lensAnimating = false;
+  }, LENS_EXPAND_MS);
 }
 
 function selectComponent(id) {
@@ -3254,7 +3269,13 @@ function selectComponent(id) {
   const meta = getComponentMeta(id);
   currentPanelMeta = meta;
 
-  if (lensOpen) closeLens();
+  if (
+    lensOpen ||
+    lensAnimating ||
+    lensChatPanel.classList.contains("open")
+  ) {
+    cancelLensTransition();
+  }
 
   document.querySelectorAll(".tree-row").forEach((r) => {
     r.classList.toggle("selected", r.dataset.id === id);
@@ -3269,28 +3290,25 @@ function selectComponent(id) {
   const top = getTopComponentMeta(id);
   panelTitle.textContent = top.label;
   renderPanel(meta);
-  rightPanel.classList.remove("settings-hidden", "settings-closing");
-  rightPanel.classList.add("visible");
-  workspace.classList.add("has-right-panel");
+  showRightPanel();
 }
 
 function clearSelection() {
   selectedId = null;
   currentPanelMeta = null;
-  closeLens();
+  cancelLensTransition();
   document
     .querySelectorAll(".tree-row")
     .forEach((r) => r.classList.remove("selected"));
   document.querySelectorAll(".sf-block").forEach((b) => {
     b.classList.remove("selected", "hovered");
   });
-  rightPanel.classList.remove("visible", "settings-hidden", "settings-closing");
-  workspace.classList.remove(
-    "has-right-panel",
-    "lens-open",
-    "lens-closing-settings",
-    "lens-closing-lens",
+  rightPanel.classList.remove(
+    "visible",
+    "settings-hidden",
+    "settings-closing",
   );
+  workspace.classList.remove("has-right-panel");
 }
 
 function renderPanel(meta) {
