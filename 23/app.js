@@ -1945,37 +1945,11 @@ const LENS_ENTRY_HTML = `
         </span>
       </button>`;
 
-let lensEntryAttentionTimer = null;
-
-function playLensEntryAttention(btn) {
-  if (!btn?.isConnected) return;
-  btn.classList.remove("lens-entry-attention");
-  void btn.offsetWidth;
-  btn.classList.add("lens-entry-attention");
-  btn.addEventListener(
-    "animationend",
-    () => {
-      btn.classList.remove("lens-entry-attention");
-      if (btn.isConnected) {
-        lensEntryAttentionTimer = setTimeout(
-          () => playLensEntryAttention(btn),
-          3000,
-        );
-      }
-    },
-    { once: true },
-  );
-}
-
-function scheduleLensEntryAttention(btn) {
-  clearTimeout(lensEntryAttentionTimer);
-  if (!btn) return;
-  lensEntryAttentionTimer = setTimeout(() => playLensEntryAttention(btn), 1000);
-}
-
 function setupLensEntryBtn(btn) {
-  btn.addEventListener("click", openLens);
-  scheduleLensEntryAttention(btn);
+  btn.addEventListener("click", (e) => {
+    e.currentTarget.blur();
+    openLens();
+  });
 }
 
 function getComponentMeta(id) {
@@ -2268,6 +2242,76 @@ function snapshotComponent(component) {
   return snap;
 }
 
+function snapshotForApply(component, applyObj) {
+  const snap = {};
+  const changes =
+    applyObj.type === "multi" ? applyObj.changes : [applyObj];
+
+  changes.forEach((change) => {
+    switch (change.type) {
+      case "headline": {
+        const el = component.querySelector('[data-field="headline"]');
+        if (el) snap.headline = el.textContent;
+        break;
+      }
+      case "subheadline": {
+        const el = component.querySelector('[data-field="subheadline"]');
+        if (el) {
+          snap.subheadline = el.textContent;
+          snap.subheadline_display = el.style.display || "";
+        }
+        break;
+      }
+      case "cta_primary": {
+        const el = component.querySelector('[data-field="cta_primary"]');
+        if (el) snap.cta_primary = el.textContent;
+        break;
+      }
+      case "cta_secondary": {
+        const el = component.querySelector('[data-field="cta_secondary"]');
+        if (el) {
+          snap.cta_secondary = el.textContent;
+          snap.cta_secondary_visible = el.style.visibility;
+        }
+        break;
+      }
+      case "image": {
+        const componentId = component.getAttribute("data-component");
+        const productImgs = component.querySelectorAll("[data-reroll-img]");
+        if (componentId === "featured-collection" && productImgs.length > 1) {
+          snap.product_images = Array.from(productImgs).map((img) => img.src);
+        } else {
+          const el =
+            component.querySelector('[data-field="main-image"]') ||
+            component.querySelector("[data-reroll-img]");
+          if (el) {
+            if (el.tagName === "IMG") snap.image_src = el.src;
+            else snap.image_src = el.style.background || "";
+          }
+        }
+        break;
+      }
+      case "testimonials": {
+        const cards = component.querySelectorAll(
+          '[data-field="review-card"]',
+        );
+        snap.testimonials = Array.from(cards).map((card) => ({
+          quote:
+            card.querySelector('[data-field="review-quote"]')?.textContent ||
+            "",
+          author:
+            card.querySelector('[data-field="review-author"]')?.textContent ||
+            "",
+          rating: (card.querySelector(".sf-stars")?.textContent || "").length,
+        }));
+        break;
+      }
+    }
+  });
+
+  return snap;
+}
+
 function snapshotImagesDiffer(component, snap) {
   if (snap.product_images?.length) {
     const imgs = component.querySelectorAll("[data-reroll-img]");
@@ -2307,7 +2351,7 @@ function restoreSnapshot(component, snap, options = {}) {
       el.style.visibility = snap.cta_secondary_visible || "visible";
     }
   }
-  if (snap.product_images?.length) {
+  if (snap.product_images !== undefined && snap.product_images.length) {
     const imgs = component.querySelectorAll("[data-reroll-img]");
     imgs.forEach((img, i) => {
       if (!snap.product_images[i] || img.src === snap.product_images[i]) return;
@@ -2324,7 +2368,7 @@ function restoreSnapshot(component, snap, options = {}) {
         }, 150);
       }
     });
-  } else if (snap.image_src) {
+  } else if (snap.image_src !== undefined) {
     const el = component.querySelector('[data-field="main-image"]');
     if (el) {
       const current = el.tagName === "IMG" ? el.src : el.style.background || "";
@@ -2353,7 +2397,7 @@ function restoreSnapshot(component, snap, options = {}) {
       }
     }
   }
-  if (snap.testimonials) {
+  if (snap.testimonials !== undefined) {
     const cards = component.querySelectorAll('[data-field="review-card"]');
     cards.forEach((card, i) => {
       if (!snap.testimonials[i]) return;
@@ -2802,13 +2846,82 @@ function transitionCardToApplied(cardEl) {
   }
 }
 
+const COPY_APPLY_TYPES = new Set([
+  "headline",
+  "subheadline",
+  "cta_primary",
+  "cta_secondary",
+]);
+
+function getImagePreviewSrc(applyObj, componentId) {
+  if (!applyObj) return null;
+  if (applyObj.value) return normalizeAssetUrl(applyObj.value);
+  if (applyObj.optionIndex == null || !componentId) return null;
+  const assets = ASSETS[componentId];
+  if (!assets) return null;
+  const entry = assets[applyObj.optionIndex];
+  if (Array.isArray(entry)) {
+    return entry[0] ? normalizeAssetUrl(entry[0]) : null;
+  }
+  if (typeof entry === "string") return normalizeAssetUrl(entry);
+  return null;
+}
+
+function buildCopyPreviewBox(text) {
+  return `<div class="suggestion-preview-copy">"${escapeHtml(text)}"</div>`;
+}
+
+function buildSuggestionPreviewHtml(applyObj, componentId) {
+  if (!applyObj) return "";
+
+  if (applyObj.type === "multi") {
+    const boxes = (applyObj.changes || [])
+      .filter(
+        (c) =>
+          COPY_APPLY_TYPES.has(c.type) &&
+          c.value &&
+          String(c.value).trim() !== "",
+      )
+      .map((c) => buildCopyPreviewBox(c.value));
+    return boxes.length
+      ? `<div class="suggestion-preview-multi">${boxes.join("")}</div>`
+      : "";
+  }
+
+  if (applyObj.type === "image") {
+    const src = getImagePreviewSrc(applyObj, componentId);
+    if (!src) return "";
+    return `<div class="suggestion-preview-image"><img src="${escapeHtml(src)}" alt="Suggested image"></div>`;
+  }
+
+  if (
+    COPY_APPLY_TYPES.has(applyObj.type) &&
+    applyObj.value &&
+    String(applyObj.value).trim() !== ""
+  ) {
+    return buildCopyPreviewBox(applyObj.value);
+  }
+
+  return "";
+}
+
 function updateCardContent(cardEl, suggestion, variantIndex = 0) {
   const variant = getSuggestionVariant(suggestion, variantIndex);
   if (!variant) return;
+  const componentId = cardEl.dataset.componentId || "";
+
   cardEl.querySelector(".chat-card-label").textContent = suggestion.label;
-  cardEl.querySelector(".chat-card-quote").textContent =
-    `"${variant.reaction}"`;
-  cardEl.querySelector(".chat-card-change").textContent = variant.suggestion;
+  cardEl.querySelector(".chat-card-current-text").textContent =
+    variant.reaction || "";
+  cardEl.querySelector(".chat-card-insight-text").textContent =
+    variant.insight || variant.suggestion || "";
+
+  const previewEl = cardEl.querySelector(".chat-card-preview");
+  previewEl.innerHTML = buildSuggestionPreviewHtml(
+    variant.apply,
+    componentId,
+  );
+
   const tagsEl = cardEl.querySelector(".chat-card-tags");
   tagsEl.innerHTML = (suggestion.tags || [])
     .map((t) => `<span class="chat-card-tag">${escapeHtml(t)}</span>`)
@@ -2835,7 +2948,9 @@ function renderCard(cardEl, suggestion, componentId, variantIndex) {
     if (!applyObj) return;
     const component = getComponentElement(compId);
     if (!cardEl.dataset.snapshot && component) {
-      cardEl.dataset.snapshot = JSON.stringify(snapshotComponent(component));
+      cardEl.dataset.snapshot = JSON.stringify(
+        snapshotForApply(component, applyObj),
+      );
     }
 
     applyChange(compId, applyObj);
@@ -2894,8 +3009,20 @@ function buildDirectionCard(
           <span class="chat-card-label"></span>
           <button type="button" class="btn-undo" hidden aria-label="Undo applied changes">Undo</button>
         </div>
-        <p class="chat-card-quote"></p>
-        <p class="chat-card-change"></p>
+        <div class="chat-card-body">
+          <section class="chat-card-section chat-card-section-current">
+            <span class="chat-card-section-label">Current</span>
+            <p class="chat-card-current-text"></p>
+          </section>
+          <section class="chat-card-section chat-card-section-insight">
+            <span class="chat-card-section-label">Insight</span>
+            <p class="chat-card-insight-text"></p>
+          </section>
+          <section class="chat-card-section chat-card-section-preview">
+            <span class="chat-card-section-label">Suggested change</span>
+            <div class="chat-card-preview"></div>
+          </section>
+        </div>
         <div class="chat-card-tags"></div>
         <div class="card-actions">
           <button type="button" class="btn-apply">Apply</button>
@@ -3220,7 +3347,7 @@ function renderPanel(meta) {
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 16V8m0 0l-3 3m3-3l3 3" stroke="#6b6b8a" stroke-width="1.5" stroke-linecap="round"/><rect x="3" y="3" width="18" height="18" rx="3" stroke="#6b6b8a" stroke-width="1.5"/></svg>
                 <p>Drop an image or click to upload</p>
                 <button type="button" class="btn-ai">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.2 3.5L12 5.5 9.5 8l.8 4L7 10.2 3.7 12l.8-4L2 5.5l3.8-1L7 1z" fill="#6c63ff"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.2 3.5L12 5.5 9.5 8l.8 4L7 10.2 3.7 12l.8-4L2 5.5l3.8-1L7 1z" fill="#5C4EE5"/></svg>
                   Generate with AI
                 </button>
               </div>
