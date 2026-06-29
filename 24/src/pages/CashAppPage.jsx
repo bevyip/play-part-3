@@ -921,7 +921,6 @@ function LineItemDetailPanel({
   onAuditLogClick,
   newDesignEnabled,
   approvalLayoutFinal = true,
-  onApprovalLayoutFinalChange,
   onApprove,
   onReject,
   onReassign,
@@ -955,12 +954,6 @@ function LineItemDetailPanel({
           {lineNumber}
         </Typography>
         <Box sx={{ flex: 1 }} />
-        {newDesignEnabled ? (
-          <ApprovalLayoutSegmentedToggle
-            approvalLayoutFinal={approvalLayoutFinal}
-            onChange={onApprovalLayoutFinalChange}
-          />
-        ) : null}
         <IconButton
           disableRipple
           size="small"
@@ -1023,8 +1016,6 @@ function LineItemDetailPanel({
             value={detail.invoiceNumber}
           />
         </Box>
-
-        {newDesignEnabled && !approvalLayoutFinal ? miniApprovalBlock : null}
 
         {!newDesignEnabled ? (
           <Box
@@ -1390,6 +1381,12 @@ export default function CashAppPage({ newDesignEnabled = false, resetKey = 0 }) 
             <GetAppIcon sx={{ fontSize: 21 }} />
           </IconButton>
         </Box>
+        {newDesignEnabled ? (
+          <ApprovalLayoutSegmentedToggle
+            approvalLayoutFinal={approvalLayoutFinal}
+            onChange={setApprovalLayoutFinal}
+          />
+        ) : null}
       </Box>
 
       {/* Check header card */}
@@ -1628,6 +1625,13 @@ export default function CashAppPage({ newDesignEnabled = false, resetKey = 0 }) 
 
           <Box
             sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
+          <Box
+            sx={{
               bgcolor: "#fff",
               borderRadius: 1.5,
               border: "1px solid #e0e0e0",
@@ -1803,7 +1807,6 @@ export default function CashAppPage({ newDesignEnabled = false, resetKey = 0 }) 
 
           <Box
             sx={{
-              mt: 2,
               bgcolor: "#fff",
               borderRadius: 1.5,
               border: "1px solid #e0e0e0",
@@ -1885,6 +1888,7 @@ export default function CashAppPage({ newDesignEnabled = false, resetKey = 0 }) 
               </Button>
             </Box>
           </Box>
+          </Box>
         </Box>
 
         {/* Right column */}
@@ -1896,8 +1900,22 @@ export default function CashAppPage({ newDesignEnabled = false, resetKey = 0 }) 
             flexDirection: "column",
             gap: 2,
             ...rightColumnInputSx,
+            pt: newDesignEnabled && !approvalLayoutFinal ? 2 : 0,
           }}
         >
+          {newDesignEnabled && !approvalLayoutFinal ? (
+            <MiniApprovalComponent
+              key={selectedLineItem}
+              approvalStatus={selectedDetail.approvalStatus}
+              onApprove={() => applyApprovalToSelectedLineItem("approve")}
+              onReject={handleRejectManage}
+              onReassign={handleReassignManage}
+              onUnassign={handleUnassignManage}
+              onCommentsClick={() => setAuditLogOpen(true)}
+              sx={{ mb: 0 }}
+            />
+          ) : null}
+
           {/* Detail panel */}
           <Box
             sx={{
@@ -1916,10 +1934,10 @@ export default function CashAppPage({ newDesignEnabled = false, resetKey = 0 }) 
                 flexDirection: "column",
                 overflow: "hidden",
                 maxHeight: detailExpanded
-                  ? newDesignEnabled
+                  ? newDesignEnabled && approvalLayoutFinal
                     ? DETAIL_PANEL_MAX_HEIGHT.expanded.newDesign
                     : DETAIL_PANEL_MAX_HEIGHT.expanded.default
-                  : newDesignEnabled
+                  : newDesignEnabled && approvalLayoutFinal
                     ? DETAIL_PANEL_MAX_HEIGHT.collapsed.newDesign
                     : DETAIL_PANEL_MAX_HEIGHT.collapsed.default,
               }}
@@ -1934,7 +1952,6 @@ export default function CashAppPage({ newDesignEnabled = false, resetKey = 0 }) 
                 onAuditLogClick={() => setAuditLogOpen(true)}
                 newDesignEnabled={newDesignEnabled}
                 approvalLayoutFinal={approvalLayoutFinal}
-                onApprovalLayoutFinalChange={setApprovalLayoutFinal}
                 onApprove={() => applyApprovalToSelectedLineItem("approve")}
                 onReject={handleRejectManage}
                 onReassign={handleReassignManage}
@@ -1948,9 +1965,7 @@ export default function CashAppPage({ newDesignEnabled = false, resetKey = 0 }) 
           </Box>
 
           {/* Line items panel */}
-          <Box
-            sx={{ display: "flex", flexDirection: "column", flex: 1, mt: 2 }}
-          >
+          <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
             <Box
               sx={{
                 px: 2,

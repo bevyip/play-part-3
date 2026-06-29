@@ -11,7 +11,11 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import { ArrowDropDownIcon, ArrowDropUpIcon, buttonChevronLgSx, buttonChevronSx } from "../theme/icons";
+import {
+  ArrowDropDownIcon,
+  KeyboardArrowUpIcon,
+  buttonChevronSx,
+} from "../theme/icons";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import UploadIcon from "@mui/icons-material/Upload";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
@@ -876,9 +880,9 @@ export default function DeductionModal({
                       sx={detailAccordionHeaderSx}
                     >
                       {approvalOpen ? (
-                      <ArrowDropUpIcon
-                        sx={{ ...buttonChevronLgSx, mr: 1.25, color: LABEL_COLOR }}
-                      />
+                        <KeyboardArrowUpIcon
+                          sx={{ fontSize: 20, mr: 1.25, color: LABEL_COLOR }}
+                        />
                       ) : (
                         <KeyboardArrowRightIcon
                           sx={{ fontSize: 20, mr: 1.25, color: LABEL_COLOR }}

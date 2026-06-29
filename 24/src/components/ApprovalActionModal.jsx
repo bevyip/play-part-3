@@ -14,6 +14,7 @@ import Checkbox from "@mui/material/Checkbox";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import Link from "@mui/material/Link";
+import { KeyboardArrowDownIcon } from "../theme/icons";
 import { TABLE_TEXT_COLOR } from "../theme/colors";
 import {
   FALLBACK_USER,
@@ -323,6 +324,7 @@ function ActionSelectField({
         value={value}
         label={label}
         onChange={onChange}
+        IconComponent={KeyboardArrowDownIcon}
         sx={selectSx}
       >
         {options.map((option) => (

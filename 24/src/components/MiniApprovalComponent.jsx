@@ -6,9 +6,12 @@ import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import ForumIcon from "@mui/icons-material/Forum";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import { ArrowDropDownIcon, buttonChevronSx } from "../theme/icons";
+import {
+  ArrowDropDownIcon,
+  KeyboardArrowDownIcon,
+  KeyboardArrowUpIcon,
+  buttonChevronSx,
+} from "../theme/icons";
 import { TABLE_TEXT_COLOR } from "../theme/colors";
 import { simpleTooltipProps } from "../theme/tooltips";
 import ApprovalManageMenu from "./ApprovalManageMenu";
@@ -51,6 +54,7 @@ export default function MiniApprovalComponent({
   onReassign,
   onUnassign,
   onCommentsClick,
+  sx,
 }) {
   const assignedToMe = isAwaitingCurrentUserApproval(approvalStatus);
   const [expanded, setExpanded] = useState(assignedToMe);
@@ -99,6 +103,7 @@ export default function MiniApprovalComponent({
         px: 1.75,
         py: 2,
         mb: 2,
+        ...sx,
       }}
     >
       <Box
@@ -242,7 +247,15 @@ export default function MiniApprovalComponent({
               variant="contained"
               size="small"
               endIcon={
-                <ArrowDropDownIcon sx={{ ...buttonChevronSx, color: "#fff" }} />
+                manageAnchorEl ? (
+                  <KeyboardArrowUpIcon
+                    sx={{ ...buttonChevronSx, color: "#fff" }}
+                  />
+                ) : (
+                  <KeyboardArrowDownIcon
+                    sx={{ ...buttonChevronSx, color: "#fff" }}
+                  />
+                )
               }
               onClick={handleManageOpen}
               sx={manageButtonSx}

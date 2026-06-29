@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import { ArrowDropDownIcon, buttonChevronSx } from "../theme/icons";
+import {
+  KeyboardArrowDownIcon,
+  KeyboardArrowUpIcon,
+  buttonChevronSx,
+} from "../theme/icons";
 import ModalAuditLogPanel from "./ModalAuditLogPanel";
 import ApprovalManageMenu from "./ApprovalManageMenu";
 import ApprovalActionModal from "./ApprovalActionModal";
@@ -218,9 +222,15 @@ export default function DeductionModalApprovalsAudit({
             variant="outlined"
             size="small"
             endIcon={
-              <ArrowDropDownIcon
-                sx={{ ...buttonChevronSx, color: "inherit" }}
-              />
+              moreAnchorEl ? (
+                <KeyboardArrowUpIcon
+                  sx={{ ...buttonChevronSx, color: "inherit" }}
+                />
+              ) : (
+                <KeyboardArrowDownIcon
+                  sx={{ ...buttonChevronSx, color: "inherit" }}
+                />
+              )
             }
             onClick={handleMoreOpen}
             sx={enabledMoreSx}

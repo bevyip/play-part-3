@@ -4,7 +4,11 @@ import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Collapse from "@mui/material/Collapse";
-import { ArrowDropDownIcon, ArrowDropUpIcon, buttonChevronSx } from "../theme/icons";
+import {
+  KeyboardArrowDownIcon,
+  KeyboardArrowUpIcon,
+  buttonChevronSx,
+} from "../theme/icons";
 import { useState } from "react";
 import confidoLogo from "../img/confido-logo.png";
 import IosToggle from "./IosToggle";
@@ -102,9 +106,9 @@ export default function Sidebar({
               primaryTypographyProps={mainTitleProps}
             />
             {isOpen ? (
-              <ArrowDropUpIcon sx={chevronSx} />
+              <KeyboardArrowUpIcon sx={chevronSx} />
             ) : (
-              <ArrowDropDownIcon sx={chevronSx} />
+              <KeyboardArrowDownIcon sx={chevronSx} />
             )}
           </ListItemButton>
           <Collapse in={isOpen}>
@@ -158,7 +162,7 @@ export default function Sidebar({
           primary={item.label}
           primaryTypographyProps={mainTitleProps}
         />
-        {item.hasChildren && <ArrowDropDownIcon sx={chevronSx} />}
+        {item.hasChildren && <KeyboardArrowDownIcon sx={chevronSx} />}
       </ListItemButton>
     );
   };

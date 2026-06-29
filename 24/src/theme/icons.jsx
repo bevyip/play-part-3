@@ -1,9 +1,16 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
-export { ArrowDropDownIcon, ArrowDropUpIcon };
+export {
+  ArrowDropDownIcon,
+  ArrowDropUpIcon,
+  KeyboardArrowDownIcon,
+  KeyboardArrowUpIcon,
+};
 
-/** Filled triangle chevron sizes for buttons (not select dropdowns). */
+/** Chevron sizes for buttons and panel toggles. */
 export const BUTTON_CHEVRON_FONT_SIZE = 22;
 export const BUTTON_CHEVRON_FONT_SIZE_LG = 26;
 export const BUTTON_CHEVRON_FONT_SIZE_SM = 18;
