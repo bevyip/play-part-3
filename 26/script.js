@@ -10,7 +10,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-
+import { createGalleryRoom } from './room.js?v=5';
+import { createPresence } from './presence.js?v=2';
 (() => {
   const webglCanvas = document.getElementById('webgl-canvas');
   const canvas2d = document.getElementById('canvas-2d');
@@ -68,6 +69,9 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
   ];
 
   let currentExhibitIndex = 0;
+  const desktopRoom = window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches;
+  let galleryRoom = null;
+  let presence = null;
   let tileSize = 420;
   let dpr = 1;
   let lastTime = performance.now();
@@ -3997,6 +4001,9 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
     setTimeout(() => {
       // 2. Swap exhibit state while off-screen and position new piece on the right
       currentExhibitIndex = (currentExhibitIndex + delta + EXHIBITS.length) % EXHIBITS.length;
+      if (presence && (!desktopRoom || (galleryRoom && galleryRoom.getMode() === 'exhibit'))) {
+        presence.setExhibit(EXHIBITS[currentExhibitIndex].id, !desktopRoom);
+      }
       resetMimosaEffects();
       ctx2d.clearRect(0, 0, canvas2d.width, canvas2d.height);
       updateGalleryUI();
@@ -4045,6 +4052,12 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
         (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '_' || e.key === '0')
       ) {
         e.preventDefault();
+        return;
+      }
+      if (
+        desktopRoom &&
+        (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')
+      ) {
         return;
       }
       if (e.key === 'ArrowLeft') switchExhibit(-1);
@@ -4153,10 +4166,28 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
     }
   }
 
-  window.addEventListener('resize', () => handleResize(false));
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => handleResize(false));
+  const artFrame = document.getElementById('art-tile-frame');
+
+  // Centers the top note in the space above the art frame.
+  function placeTopNote() {
+    if (!artFrame) return;
+    const top = artFrame.getBoundingClientRect().top;
+    document.documentElement.style.setProperty('--note-top', `${Math.max(0, top) / 2}px`);
   }
+
+  window.addEventListener('resize', () => {
+    handleResize(false);
+    placeTopNote();
+  });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      handleResize(false);
+      placeTopNote();
+    });
+  }
+  placeTopNote();
+  window.addEventListener('load', placeTopNote);
+  if (document.fonts) document.fonts.ready.then(placeTopNote);
 
   tileBezel.addEventListener('mousemove', (e) => {
     updatePointerFromEvent(e.clientX, e.clientY);
@@ -4201,6 +4232,13 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
     const dt = Math.min((now - lastTime) / 1000, 0.05);
     lastTime = now;
     const timeSec = now / 1000;
+    const roomFrame = galleryRoom && galleryRoom.takesFrame();
+
+    if (roomFrame && galleryRoom.blocksExhibit()) {
+      galleryRoom.update(dt);
+      requestAnimationFrame(animate);
+      return;
+    }
 
     if (pointer.active) {
       pointer.haloAlpha = lerp(pointer.haloAlpha, 1, clamp(dt * 14, 0, 1));
@@ -4223,6 +4261,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
     pointer.vx *= 0.8;
     pointer.vy *= 0.8;
 
+    if (roomFrame) galleryRoom.update(dt);
     requestAnimationFrame(animate);
   }
 
@@ -4249,6 +4288,63 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
       bananaState.smoothY = pointer.y;
       pointer.haloAlpha = 1;
     }
+  }
+
+  presence = createPresence();
+  const backBtn = document.getElementById('back-to-gallery');
+  const roomCanvas = document.getElementById('room-canvas');
+
+  function settleExhibit(id) {
+    const idx = EXHIBITS.findIndex((exhibit) => exhibit.id === id);
+    if (idx >= 0) currentExhibitIndex = idx;
+    document.documentElement.classList.remove('in-room', 'boot-room');
+    handleResize(true);
+    placeTopNote();
+    updateGalleryUI();
+    if (presence) presence.setExhibit(id, false);
+  }
+
+  window.matchMedia('(min-width: 1024px) and (pointer: fine)').addEventListener('change', () => {
+    location.reload();
+  });
+
+  if (desktopRoom && roomCanvas) {
+    galleryRoom = createGalleryRoom({
+      THREE,
+      loader: gltfLoader,
+      canvas: roomCanvas,
+      onArrive: settleExhibit,
+      onSettled: () => {
+        if (backBtn) backBtn.hidden = false;
+      }
+    });
+
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        if (!galleryRoom || galleryRoom.getMode() === 'fly' || galleryRoom.getMode() === 'room') return;
+        backBtn.hidden = true;
+        const exhibitId = EXHIBITS[currentExhibitIndex].id;
+        if (presence) presence.setExhibit(null);
+        document.documentElement.classList.add('in-room');
+        document.documentElement.classList.remove('boot-room');
+        const snap = presence.snapshot();
+        galleryRoom.flyHome(exhibitId);
+        snap.then((data) => galleryRoom.setCrowd(data));
+      });
+    }
+
+    const hashOpensExhibit = /^#\d/.test(window.location.hash);
+    if (hashOpensExhibit) {
+      if (backBtn) backBtn.hidden = false;
+      if (presence) presence.setExhibit(EXHIBITS[currentExhibitIndex].id, false);
+    } else {
+      document.documentElement.classList.add('in-room');
+      document.documentElement.classList.remove('boot-room');
+      galleryRoom.start();
+      presence.snapshot().then((data) => galleryRoom.setCrowd(data));
+    }
+  } else if (presence) {
+    presence.setExhibit(EXHIBITS[currentExhibitIndex].id, true);
   }
 
   requestAnimationFrame(animate);

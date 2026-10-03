@@ -29,7 +29,14 @@ body {
   touch-action: none;
   background-color: var(--wall-bg);
   color: var(--ink-dark);
-  font-family: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    "DM Sans",
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -53,7 +60,7 @@ body {
   align-items: center;
   justify-content: center;
   background-color: #f0efec;
-  background-image: url('media/white-wall.jpg');
+  background-image: url("media/white-wall.jpg");
   background-size: 620px 620px;
   background-repeat: repeat;
   background-position: center;
@@ -61,34 +68,46 @@ body {
 
 /* Soft Overhead Gallery Track Spotlight Cones & Scalloped Shadows over the White Wall Texture */
 .gallery-wall::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 1;
   background:
     /* Overhead spotlight cones casting downward onto the white gallery wall */
-    radial-gradient(ellipse 44% 72% at 50% 34%,
+    radial-gradient(
+      ellipse 44% 72% at 50% 34%,
       rgba(255, 255, 255, 0.55) 0%,
       rgba(255, 255, 255, 0.15) 48%,
-      rgba(235, 234, 229, 0) 80%),
+      rgba(235, 234, 229, 0) 80%
+    ),
     /* Scalloped overcast ceiling shadow pockets between overhead spotlights */
-    radial-gradient(ellipse 24% 22% at 28% -4%,
+    radial-gradient(
+        ellipse 24% 22% at 28% -4%,
+        rgba(130, 128, 122, 0.24) 0%,
+        rgba(130, 128, 122, 0) 75%
+      ),
+    radial-gradient(
+      ellipse 24% 22% at 72% -4%,
       rgba(130, 128, 122, 0.24) 0%,
-      rgba(130, 128, 122, 0) 75%),
-    radial-gradient(ellipse 24% 22% at 72% -4%,
-      rgba(130, 128, 122, 0.24) 0%,
-      rgba(130, 128, 122, 0) 75%),
-    radial-gradient(ellipse 22% 26% at 0% 0%,
-      rgba(115, 114, 108, 0.30) 0%,
-      rgba(115, 114, 108, 0) 78%),
-    radial-gradient(ellipse 22% 26% at 100% 0%,
-      rgba(115, 114, 108, 0.30) 0%,
-      rgba(115, 114, 108, 0) 78%),
+      rgba(130, 128, 122, 0) 75%
+    ),
+    radial-gradient(
+      ellipse 22% 26% at 0% 0%,
+      rgba(115, 114, 108, 0.3) 0%,
+      rgba(115, 114, 108, 0) 78%
+    ),
+    radial-gradient(
+      ellipse 22% 26% at 100% 0%,
+      rgba(115, 114, 108, 0.3) 0%,
+      rgba(115, 114, 108, 0) 78%
+    ),
     /* Subtle vignette toward outer gallery floor/edges */
-    radial-gradient(circle at 50% 42%,
-      rgba(255, 255, 255, 0) 52%,
-      rgba(170, 168, 162, 0.26) 100%);
+    radial-gradient(
+        circle at 50% 42%,
+        rgba(255, 255, 255, 0) 52%,
+        rgba(170, 168, 162, 0.26) 100%
+      );
 }
 
 /* Centerpiece Column: Square Art Tile + Museum Plaque Below */
@@ -113,7 +132,7 @@ body {
 
 /* Directional lower-left standoff block shadow cast by the deeper painting frame onto the textured wall */
 .art-tile-frame::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -4.2%;
@@ -129,14 +148,14 @@ body {
 
 /* Matte gallery frame surface lit from upper-right */
 .art-tile-frame::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(225deg, #f9f6f2 0%, #f1ece6 54%, #e9e2db 100%);
   border-top: 1px solid rgba(255, 255, 255, 0.94);
-  border-right: 1px solid rgba(255, 255, 255, 0.80);
+  border-right: 1px solid rgba(255, 255, 255, 0.8);
   border-left: 1px solid rgba(182, 174, 166, 0.48);
   border-bottom: 1px solid rgba(168, 160, 150, 0.58);
   box-shadow:
@@ -183,14 +202,23 @@ body {
   position: relative;
   background: transparent;
   border: none;
-  font-family: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    "DM Sans",
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   will-change: transform, opacity;
 }
 
 /* Right-to-left sequential slide transition states (leaves left first, then new piece slides in from right) */
 .art-tile-frame.slide-out-left,
 .art-plaque.slide-out-left {
-  transition: transform 0.34s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+  transition:
+    transform 0.34s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.28s ease;
   transform: translateX(-62vw);
   opacity: 0;
   pointer-events: none;
@@ -206,14 +234,16 @@ body {
 
 .art-tile-frame.slide-in-center,
 .art-plaque.slide-in-center {
-  transition: transform 0.40s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.34s ease;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.34s ease;
   transform: translateX(0);
   opacity: 1;
 }
 
 /* Directional lower-left standoff block shadow cast by upper-right gallery light onto the textured wall */
 .art-plaque::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -15px;
@@ -229,7 +259,7 @@ body {
 
 /* Matte Gator Board plaque surface lit from upper-right */
 .art-plaque::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -241,7 +271,7 @@ body {
   border-bottom: 1px solid rgba(175, 167, 158, 0.55);
   box-shadow:
     -2px 2px 4px rgba(52, 46, 40, 0.14),
-    -1px 1px 1px rgba(42, 38, 32, 0.10);
+    -1px 1px 1px rgba(42, 38, 32, 0.1);
 }
 
 .plaque-artist {
@@ -281,7 +311,7 @@ body {
 
 /* Miniature directional lower-left standoff block shadow matching .art-tile-frame::before */
 .nav-tile::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -10px;
@@ -297,19 +327,19 @@ body {
 
 /* Miniature matte gallery frame surface lit from upper-right matching .art-tile-frame::after */
 .nav-tile::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(225deg, #f9f6f2 0%, #f1ece6 54%, #e9e2db 100%);
   border-top: 1px solid rgba(255, 255, 255, 0.94);
-  border-right: 1px solid rgba(255, 255, 255, 0.80);
+  border-right: 1px solid rgba(255, 255, 255, 0.8);
   border-left: 1px solid rgba(182, 174, 166, 0.48);
   border-bottom: 1px solid rgba(168, 160, 150, 0.58);
   box-shadow:
     -2px 2px 4px rgba(48, 42, 36, 0.14),
-    -1px 1px 1px rgba(38, 34, 28, 0.10);
+    -1px 1px 1px rgba(38, 34, 28, 0.1);
 }
 
 .nav-prev {
@@ -363,7 +393,7 @@ body {
 }
 
 .nav-label {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--ink-dark);
@@ -428,4 +458,194 @@ body {
     font-size: 0.66rem;
     margin-top: 2px;
   }
+}
+
+html.boot-room,
+html.in-room {
+  background: #c8c8c4;
+}
+
+html.boot-room .gallery-wall,
+html.in-room .gallery-wall {
+  visibility: hidden;
+}
+
+#room-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 8;
+  display: none;
+  opacity: 1;
+}
+
+#room-canvas.is-on {
+  display: block;
+}
+
+#room-canvas.is-fading {
+  opacity: 0;
+  transition: opacity 0.36s ease;
+}
+
+.experience-note {
+  position: fixed;
+  top: max(var(--note-top, 28px), calc(env(safe-area-inset-top) + 10px));
+  left: 50%;
+  z-index: 30;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #272727;
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#back-to-gallery[hidden] {
+  display: none;
+}
+
+#back-to-gallery:hover,
+#back-to-gallery:focus-visible {
+  color: #2a2a28;
+}
+
+#desktop-hint {
+  pointer-events: none;
+}
+
+#back-to-gallery {
+  cursor: pointer;
+}
+
+@media (min-width: 1024px) and (pointer: fine) {
+  #desktop-hint {
+    display: none;
+  }
+}
+
+.room-keys {
+  display: none;
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 12;
+  grid-template-columns: repeat(3, 30px);
+  grid-template-rows: repeat(2, 30px);
+  gap: 4px;
+}
+
+.room-legend {
+  display: none;
+  position: fixed;
+  left: 28px;
+  bottom: 24px;
+  z-index: 12;
+  gap: 18px;
+  pointer-events: none;
+}
+
+html.in-room .room-legend {
+  display: flex;
+}
+
+.room-legend figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.room-legend img {
+  width: 48px;
+  height: 66px;
+}
+
+.room-legend img:not([src]) {
+  visibility: hidden;
+}
+
+.room-legend figcaption {
+  color: #272727;
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+html.in-room .room-keys {
+  display: grid;
+}
+
+.room-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(30, 30, 30, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 1px 0 rgba(30, 30, 30, 0.18);
+  color: rgba(30, 30, 30, 0.75);
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  transition:
+    background-color 0.08s ease,
+    color 0.08s ease,
+    transform 0.08s ease;
+}
+
+.room-key.is-active {
+  background: rgba(205, 205, 200, 0.9);
+  box-shadow: none;
+  transform: translateY(1px);
+}
+
+.room-key-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.room-key-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.room-key-down {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.room-key-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.room-key svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html.in-room #desktop-hint {
+  display: none;
 }
