@@ -75,7 +75,7 @@ module.exports = async function handler(req, res) {
     const body = readBody(req);
     const id = String(body.id || '');
     if (!ID_RE.test(id)) return res.status(400).json({ ok: false });
-    if (!configured()) return res.status(200).json({ ok: true, stored: false, reason: 'not-configured' });
+    if (!configured()) return res.status(200).json({ ok: true, stored: false });
     try {
       if (body.leave) {
         await table('DELETE', `?id=eq.${id}`);
@@ -92,7 +92,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: true, stored: true });
     } catch (err) {
       console.error(err);
-      return res.status(200).json({ ok: true, stored: false, reason: 'database-error' });
+      return res.status(200).json({ ok: true, stored: false });
     }
   }
 
