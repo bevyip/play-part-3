@@ -17,7 +17,7 @@ body,
   overflow: hidden;
   background-color: #091d2e;
   font-family:
-    "Inter",
+    "Satoshi",
     -apple-system,
     BlinkMacSystemFont,
     sans-serif;
@@ -64,12 +64,60 @@ body,
   overflow: visible;
 }
 
-/* Bottom-right Minimalistic Mini Browser Frame for Enlarged Webcam Preview */
-.swim-cam-panel {
+/* Bottom-right webcam preview. The helper sits above the frame and does not shift it. */
+.swim-cam-stack {
+  --frame-warn-duration: 3s;
   position: fixed;
   bottom: 16px;
   right: 16px;
   z-index: 25;
+  width: 256px;
+}
+
+.swim-cam-helper {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  margin: 0;
+  padding: 0 2px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  font-family: "Satoshi", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  color: #f4fcff;
+  text-shadow: 0 1px 8px rgba(6, 20, 36, 0.85);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.swim-cam-helper.is-visible {
+  visibility: visible;
+  animation: frameWarnFade var(--frame-warn-duration) ease forwards;
+}
+
+@keyframes frameWarnFade {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  68% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Minimalistic mini browser frame for the webcam preview */
+.swim-cam-panel {
   display: flex;
   flex-direction: column;
   background: rgba(10, 24, 38, 0.58);
@@ -225,9 +273,9 @@ body,
   transform: translate(-50%, -50%);
   z-index: 30;
   max-width: min(86vw, 560px);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Satoshi", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
   text-align: center;
   color: #f4fcff;
@@ -238,6 +286,24 @@ body,
 
 .swim-hint.dismissed {
   opacity: 0;
+}
+
+@media (max-width: 640px) {
+  .swim-hint {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 420px) {
+  .swim-hint {
+    font-size: 13px;
+  }
+}
+
+@media (max-height: 620px) {
+  .swim-hint {
+    top: 36%;
+  }
 }
 
 @keyframes gameFloatUpBoop {

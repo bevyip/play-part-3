@@ -7,10 +7,13 @@
   <title>Go For A Swim</title>
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏊</text></svg>" />
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@1&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="./src/style.css" />
   <script type="importmap">
@@ -81,17 +84,20 @@
       </div>
     </div>
 
-    <!-- Top-right minimalistic mini browser frame for webcam hand tracking preview -->
-    <div id="swim-cam-panel" class="swim-cam-panel active">
-      <div class="mini-browser-bar" aria-hidden="true">
-        <span class="mini-dot"></span>
-        <span class="mini-dot"></span>
-        <span class="mini-dot"></span>
-      </div>
-      <div id="swim-cam-body" class="swim-cam-body">
-        <div class="swim-cam-viewport">
-          <video id="swim-cam-video" playsinline muted></video>
-          <canvas id="swim-cam-canvas"></canvas>
+    <!-- Bottom-right webcam preview. The note appears only after hands leave the frame. -->
+    <div id="swim-cam-stack" class="swim-cam-stack">
+      <p id="swim-cam-helper" class="swim-cam-helper" role="status" aria-live="polite" aria-hidden="true">Keep your hands in frame</p>
+      <div id="swim-cam-panel" class="swim-cam-panel active">
+        <div class="mini-browser-bar" aria-hidden="true">
+          <span class="mini-dot"></span>
+          <span class="mini-dot"></span>
+          <span class="mini-dot"></span>
+        </div>
+        <div id="swim-cam-body" class="swim-cam-body">
+          <div class="swim-cam-viewport">
+            <video id="swim-cam-video" playsinline muted></video>
+            <canvas id="swim-cam-canvas"></canvas>
+          </div>
         </div>
       </div>
     </div>

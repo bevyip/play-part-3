@@ -117,13 +117,63 @@ function updateDepthUI(depthMeters, timeSec) {
   }
 }
 
+// Caustic cost scales with the square of the grid. 860 is the full sheet (~740k vertices).
+// 430 is about four times cheaper, 280 about nine times. Phones also draw that sheet
+// into a smaller target and at a lower pixel ratio.
+function getRenderQuality() {
+  const cores = navigator.hardwareConcurrency || 8;
+  const memory = navigator.deviceMemory;
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  const shortSide = Math.min(window.screen.width, window.screen.height);
+  const isPhone = coarsePointer && shortSide <= 900;
+  const veryWeak = (memory !== undefined && memory <= 2) || cores <= 2;
+  const weak = veryWeak || (memory !== undefined && memory <= 4) || cores <= 4;
+
+  if (isPhone) {
+    return {
+      gridSegments: 280,
+      pixelRatioCap: shortSide <= 420 ? 1 : 1.25,
+      causticsScale: 0.5,
+      causticsMax: 1024,
+    };
+  }
+  if (veryWeak) {
+    return {
+      gridSegments: 280,
+      pixelRatioCap: 2,
+      causticsScale: 1.25,
+      causticsMax: 2048,
+    };
+  }
+  if (weak) {
+    return {
+      gridSegments: 430,
+      pixelRatioCap: 2,
+      causticsScale: 1.25,
+      causticsMax: 2048,
+    };
+  }
+  return {
+    gridSegments: 860,
+    pixelRatioCap: 2,
+    causticsScale: 1.25,
+    causticsMax: 2048,
+  };
+}
+
+const renderQuality = getRenderQuality();
+
+function cappedPixelRatio() {
+  return Math.min(window.devicePixelRatio || 1, renderQuality.pixelRatioCap);
+}
+
 // --- Three.js Renderer Setup ---
 const renderer = new THREE.WebGLRenderer({
   canvas,
   antialias: false,
   powerPreference: 'high-performance',
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(cappedPixelRatio());
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.autoClear = false;
 
@@ -134,7 +184,7 @@ const frogRenderer = new THREE.WebGLRenderer({
   antialias: true,
   powerPreference: 'high-performance',
 });
-frogRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+frogRenderer.setPixelRatio(cappedPixelRatio());
 frogRenderer.setSize(window.innerWidth, window.innerHeight);
 frogRenderer.setClearColor(0x000000, 0.0);
 
@@ -157,9 +207,15 @@ let viewSize = getViewSizeMeters();
 
 // --- Offscreen Floating-Point Render Targets for Caustics & Underwater Scatter Bloom ---
 function createRenderTargets() {
-  const dpr = Math.min(window.devicePixelRatio, 2);
-  const rtWidth = Math.min(2048, Math.round(window.innerWidth * dpr * 1.25));
-  const rtHeight = Math.min(2048, Math.round(window.innerHeight * dpr * 1.25));
+  const dpr = cappedPixelRatio();
+  const rtWidth = Math.max(2, Math.min(
+    renderQuality.causticsMax,
+    Math.round(window.innerWidth * dpr * renderQuality.causticsScale),
+  ));
+  const rtHeight = Math.max(2, Math.min(
+    renderQuality.causticsMax,
+    Math.round(window.innerHeight * dpr * renderQuality.causticsScale),
+  ));
 
   const causticsTarget = new THREE.WebGLRenderTarget(rtWidth, rtHeight, {
     type: THREE.HalfFloatType,
@@ -170,8 +226,8 @@ function createRenderTargets() {
     stencilBuffer: false,
   });
 
-  const bloomWidth = Math.max(256, Math.round(rtWidth * 0.5));
-  const bloomHeight = Math.max(256, Math.round(rtHeight * 0.5));
+  const bloomWidth = Math.max(64, Math.round(rtWidth * 0.5));
+  const bloomHeight = Math.max(64, Math.round(rtHeight * 0.5));
   const bloomTargetH = new THREE.WebGLRenderTarget(bloomWidth, bloomHeight, {
     type: THREE.HalfFloatType,
     format: THREE.RGBAFormat,
@@ -198,8 +254,8 @@ let rts = createRenderTargets();
 const causticsScene = new THREE.Scene();
 const causticsCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
 
-// High-resolution surface grid (860 x 860 = ~740k vertices, ~1.48M triangles)
-const GRID_SEGMENTS = 860;
+// Surface grid. Full detail is 860 x 860; weaker devices use 430 or 280.
+const GRID_SEGMENTS = renderQuality.gridSegments;
 const causticsGeometry = new THREE.PlaneGeometry(1.0, 1.0, GRID_SEGMENTS, GRID_SEGMENTS);
 
 const causticsMaterial = new THREE.ShaderMaterial({
@@ -395,6 +451,9 @@ window.addEventListener('keyup', (e) => {
 
 // --- Window Resize Handling ---
 window.addEventListener('resize', () => {
+  const pixelRatio = cappedPixelRatio();
+  renderer.setPixelRatio(pixelRatio);
+  frogRenderer.setPixelRatio(pixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   frogRenderer.setSize(window.innerWidth, window.innerHeight);
   rts.causticsTarget.dispose();

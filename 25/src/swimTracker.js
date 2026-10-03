@@ -29,7 +29,51 @@ export function createSwimTracker(state) {
   const videoEl = document.getElementById('swim-cam-video');
   const overlayCanvasEl = document.getElementById('swim-cam-canvas');
   const hintEl = document.getElementById('swim-hint');
+  const frameHelperEl = document.getElementById('swim-cam-helper');
   const ctx = overlayCanvasEl ? overlayCanvasEl.getContext('2d') : null;
+
+  // One quiet window per warning. A later exit inside this span does not show it again.
+  const frameWarnSec = frameHelperEl
+    ? (parseFloat(getComputedStyle(frameHelperEl).getPropertyValue('--frame-warn-duration')) || 3)
+    : 3;
+  let everHadBothHands = false;
+  let handsWereInFrame = false;
+  let handsOutFor = 0;
+  let frameWarnQuietUntil = -1;
+
+  if (frameHelperEl) {
+    frameHelperEl.addEventListener('animationend', () => {
+      frameHelperEl.classList.remove('is-visible');
+      frameHelperEl.setAttribute('aria-hidden', 'true');
+    });
+  }
+
+  function showFrameWarning(nowSec) {
+    if (!frameHelperEl) return;
+    frameHelperEl.classList.remove('is-visible');
+    void frameHelperEl.offsetWidth;
+    frameHelperEl.classList.add('is-visible');
+    frameHelperEl.setAttribute('aria-hidden', 'false');
+    frameWarnQuietUntil = nowSec + frameWarnSec;
+  }
+
+  function updateFrameWarning(handCount, nowSec, frameDt) {
+    if (handCount >= 2) {
+      everHadBothHands = true;
+      handsWereInFrame = true;
+      handsOutFor = 0;
+      return;
+    }
+    if (!everHadBothHands || !handsWereInFrame) return;
+
+    handsOutFor += frameDt;
+    if (handsOutFor < 0.28) return;
+
+    handsWereInFrame = false;
+    handsOutFor = 0;
+    if (nowSec < frameWarnQuietUntil) return;
+    showFrameWarning(nowSec);
+  }
 
   let isEnabled = false;
   let isLoading = false;
@@ -359,6 +403,7 @@ export function createSwimTracker(state) {
           tracker.strokeIntensity *= 0.8;
         }
 
+        updateFrameWarning(analyzed.length, nowSec, videoDt);
         drawOverlay(analyzed, nowSec);
       }
     }

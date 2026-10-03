@@ -27,7 +27,7 @@ async function table(method, query, body, prefer) {
     headers,
     body: body ? JSON.stringify(body) : undefined
   });
-  if (!res.ok) throw new Error(`supabase ${res.status}`);
+  if (!res.ok) throw new Error(`supabase ${res.status}: ${await res.text()}`);
   return method === 'GET' ? res.json() : null;
 }
 
@@ -61,6 +61,7 @@ module.exports = async function handler(req, res) {
       }
       return res.status(200).json(crowd);
     } catch (err) {
+      console.error(err);
       return res.status(200).json(crowd);
     }
   }
@@ -69,7 +70,7 @@ module.exports = async function handler(req, res) {
     const body = readBody(req);
     const id = String(body.id || '');
     if (!ID_RE.test(id)) return res.status(400).json({ ok: false });
-    if (!configured()) return res.status(200).json({ ok: true, stored: false });
+    if (!configured()) return res.status(200).json({ ok: true, stored: false, reason: 'not-configured' });
     try {
       if (body.leave) {
         await table('DELETE', `?id=eq.${id}`);
@@ -85,7 +86,8 @@ module.exports = async function handler(req, res) {
       }
       return res.status(200).json({ ok: true, stored: true });
     } catch (err) {
-      return res.status(200).json({ ok: true, stored: false });
+      console.error(err);
+      return res.status(200).json({ ok: true, stored: false, reason: 'database-error' });
     }
   }
 
