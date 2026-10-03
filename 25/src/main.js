@@ -46,15 +46,12 @@ const state = {
 const canvas = document.getElementById('pool-canvas');
 const frogCanvas = document.getElementById('frog-canvas');
 const boopBlurOverlayEl = document.getElementById('boop-blur-overlay');
-const depthHudEl = document.getElementById('depth-hud');
-const depthSvgEl = document.getElementById('depth-svg');
 const surfaceWavePathEl = document.getElementById('surface-wave-path');
 const swimmerStickmanEl = document.getElementById('swimmer-stickman');
 const stickmanArmsEl = document.getElementById('stickman-arms');
 const stickmanLegsEl = document.getElementById('stickman-legs');
 const frogBoopTextEl = document.getElementById('frog-boop-text');
 const frogToastEl = document.getElementById('frog-toast');
-const presetButtons = document.querySelectorAll('.preset-btn');
 
 let stickmanSwimPhase = 0.0;
 let lastHudTime = 0.0;

@@ -202,7 +202,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
     if (json.materials) {
       for (const mat of json.materials) {
         const sg = mat.extensions && mat.extensions.KHR_materials_pbrSpecularGlossiness;
-        if (sg && !mat.pbrMetallicRoughness) {
+        if (sg) {
           const gloss = sg.glossinessFactor !== undefined ? sg.glossinessFactor : 0.25;
           mat.pbrMetallicRoughness = {
             baseColorFactor: sg.diffuseFactor || [1, 1, 1, 1],
@@ -215,25 +215,6 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
     }
     return { name: 'KHR_materials_pbrSpecularGlossiness' };
   });
-
-  function tintVehiclePaint(root, hexColor) {
-    if (!root) return;
-    const targetColor = new THREE.Color(hexColor);
-    root.traverse((child) => {
-      if (child.isMesh && child.material) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((m) => {
-          if (m && m.color) {
-            const hsl = {};
-            m.color.getHSL(hsl);
-            if (hsl.s > 0.25 && hsl.l > 0.15 && hsl.l < 0.85) {
-              m.color.lerp(targetColor, 0.65);
-            }
-          }
-        });
-      }
-    });
-  }
 
   // ============================================================================
   // AMBIENT LAYERED AUDIO ENGINE (Bathtime Pond Quacks & NYC Street Honks)
@@ -256,6 +237,10 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
   function ensureAudioContext() {
     if (!soundEngine.ctx) {
+      // iOS mutes Web Audio when the ring/silent switch is on unless the page asks for media playback
+      if (navigator.audioSession) {
+        try { navigator.audioSession.type = 'playback'; } catch (_) { }
+      }
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
         soundEngine.ctx = new AudioCtx();
@@ -2557,6 +2542,10 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
           child.castShadow = true;
           child.receiveShadow = true;
           child.frustumCulled = false;
+          // 719 facial blend shapes are invisible from the top-down view but take seconds to upload on first render
+          child.geometry.morphAttributes = {};
+          child.morphTargetInfluences = undefined;
+          child.morphTargetDictionary = undefined;
           if (child.material) {
             const mName = child.material.name || '';
             if (mName.includes('Hair') || mName.includes('Scalp')) {
@@ -2570,8 +2559,10 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
       let mixer = null;
       let action = null;
       if (gltf.animations && gltf.animations.length > 0) {
+        const clip = gltf.animations[0];
+        clip.tracks = clip.tracks.filter((track) => !track.name.endsWith('.morphTargetInfluences'));
         mixer = new THREE.AnimationMixer(model);
-        action = mixer.clipAction(gltf.animations[0]);
+        action = mixer.clipAction(clip);
         action.play();
         // Advance to a natural mid-stride frame so arms & legs are relaxed and legible from top-down
         mixer.update(0.32);
@@ -2585,13 +2576,22 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
       personInner.add(model);
 
       personRoot.add(personInner);
-      personRoot.visible = false;
       scene.add(personRoot);
 
-      junctionState.personGroup = personRoot;
-      junctionState.personInner = personInner;
-      junctionState.personMixer = mixer;
-      junctionState.personAction = action;
+      // Compile shaders and upload buffers now so the first pointer move doesn't freeze the page
+      const warmTarget = new THREE.WebGLRenderTarget(16, 16);
+      renderer.compileAsync(scene, camera).catch(() => { }).then(() => {
+        renderer.setRenderTarget(warmTarget);
+        renderer.render(scene, camera);
+        renderer.setRenderTarget(null);
+        warmTarget.dispose();
+        personRoot.visible = false;
+
+        junctionState.personGroup = personRoot;
+        junctionState.personInner = personInner;
+        junctionState.personMixer = mixer;
+        junctionState.personAction = action;
+      });
     });
 
     // Load the 3 vehicle GLB templates: bus, scooter, and Car
@@ -3446,175 +3446,6 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
       bananaState.loaded = true;
     });
-  }
-
-  /**
-   * Generates a procedural texture for cheap brown scotch / band-aid-like tape
-   * with roughly torn jagged ends, pressed adhesive streaks, and crinkles.
-   */
-  function createRoughBrownTapeTexture() {
-    const W = 512;
-    const H = 256;
-    const c = document.createElement('canvas');
-    c.width = W;
-    c.height = H;
-    const g = c.getContext('2d');
-    const rand = mulberry32(4189);
-
-    g.clearRect(0, 0, W, H);
-
-    // Build irregular, roughly torn left & right ends and slightly uneven side edges
-    const leftTear = [];
-    const rightTear = [];
-    const stepsY = 28;
-    for (let i = 0; i <= stepsY; i++) {
-      const t = i / stepsY;
-      const y = lerp(10, H - 10, t);
-      // Rough diagonal & sawtooth hand-torn profile on both ends
-      const jagL =
-        24 +
-        t * 14 +
-        (i % 2 === 0 ? 9 : -7) +
-        (rand() - 0.5) * 14 +
-        Math.sin(t * Math.PI * 5) * 6;
-      const jagR =
-        W -
-        22 -
-        (1 - t) * 16 +
-        (i % 2 === 0 ? -8 : 9) +
-        (rand() - 0.5) * 14 +
-        Math.cos(t * Math.PI * 4) * 6;
-      leftTear.push({ x: jagL, y });
-      rightTear.push({ x: jagR, y });
-    }
-
-    g.save();
-    g.beginPath();
-    g.moveTo(leftTear[0].x, leftTear[0].y);
-    // Top edge with slight hand-pasted waviness
-    for (let i = 1; i <= 16; i++) {
-      const u = i / 16;
-      const x = lerp(leftTear[0].x, rightTear[0].x, u);
-      const y = 10 + Math.sin(u * Math.PI * 3.5) * 3.2 + (rand() - 0.5) * 2.5;
-      g.lineTo(x, y);
-    }
-    // Right roughly torn jagged edge
-    for (let i = 0; i <= stepsY; i++) {
-      g.lineTo(rightTear[i].x, rightTear[i].y);
-    }
-    // Bottom edge with slight hand-pasted waviness
-    for (let i = 15; i >= 0; i--) {
-      const u = i / 16;
-      const x = lerp(leftTear[stepsY].x, rightTear[stepsY].x, u);
-      const y = H - 10 + Math.cos(u * Math.PI * 3.0) * 3.2 + (rand() - 0.5) * 2.5;
-      g.lineTo(x, y);
-    }
-    // Left roughly torn jagged edge
-    for (let i = stepsY; i >= 0; i--) {
-      g.lineTo(leftTear[i].x, leftTear[i].y);
-    }
-    g.closePath();
-    g.clip();
-
-    // 1. Cheap warm tan-brown band-aid / brown parcel scotch tape base
-    const baseGrad = g.createLinearGradient(0, 0, W, H);
-    baseGrad.addColorStop(0, 'rgba(176, 124, 74, 0.93)');
-    baseGrad.addColorStop(0.28, 'rgba(194, 144, 92, 0.90)');
-    baseGrad.addColorStop(0.55, 'rgba(168, 114, 64, 0.94)');
-    baseGrad.addColorStop(0.82, 'rgba(198, 148, 96, 0.90)');
-    baseGrad.addColorStop(1, 'rgba(162, 108, 58, 0.93)');
-    g.fillStyle = baseGrad;
-    g.fillRect(0, 0, W, H);
-
-    // 2. Darker gummed adhesive accumulation along the top/bottom edges
-    const edgeGrad = g.createLinearGradient(0, 0, 0, H);
-    edgeGrad.addColorStop(0, 'rgba(104, 62, 28, 0.48)');
-    edgeGrad.addColorStop(0.12, 'rgba(128, 82, 42, 0.08)');
-    edgeGrad.addColorStop(0.5, 'rgba(218, 174, 124, 0.10)');
-    edgeGrad.addColorStop(0.88, 'rgba(128, 82, 42, 0.08)');
-    edgeGrad.addColorStop(1, 'rgba(104, 62, 28, 0.48)');
-    g.fillStyle = edgeGrad;
-    g.fillRect(0, 0, W, H);
-
-    // 3. Unevenly pasted air-pocket streaks & longitudinal scotch tape crinkles
-    for (let i = 0; i < 26; i++) {
-      const y0 = 18 + rand() * (H - 36);
-      const y1 = y0 + (rand() - 0.5) * 38;
-      const x0 = 20 + rand() * 90;
-      const x1 = W - 20 - rand() * 90;
-      g.strokeStyle =
-        i % 2 === 0
-          ? `rgba(238, 206, 164, ${0.14 + rand() * 0.18})`
-          : `rgba(116, 72, 34, ${0.12 + rand() * 0.16})`;
-      g.lineWidth = 1.2 + rand() * 3.5;
-      g.beginPath();
-      g.moveTo(x0, y0);
-      g.bezierCurveTo(
-        lerp(x0, x1, 0.33),
-        y0 + (rand() - 0.5) * 24,
-        lerp(x0, x1, 0.66),
-        y1 + (rand() - 0.5) * 24,
-        x1,
-        y1
-      );
-      g.stroke();
-    }
-
-    // 4. Diagonal creases & trapped air-bubble wrinkles from rough hand-pasting over the curved fruit
-    for (let i = 0; i < 14; i++) {
-      const cx = 70 + rand() * (W - 140);
-      const cy = 24 + rand() * (H - 48);
-      const len = 35 + rand() * 65;
-      const ang = (rand() - 0.5) * 1.3;
-      const dx = Math.cos(ang) * len * 0.5;
-      const dy = Math.sin(ang) * len * 0.5;
-
-      // Light crease ridge
-      g.strokeStyle = `rgba(246, 220, 182, ${0.26 + rand() * 0.18})`;
-      g.lineWidth = 1.6 + rand() * 1.8;
-      g.beginPath();
-      g.moveTo(cx - dx, cy - dy);
-      g.quadraticCurveTo(cx + (rand() - 0.5) * 12, cy + (rand() - 0.5) * 12, cx + dx, cy + dy);
-      g.stroke();
-
-      // Adjacent dark crease trough
-      g.strokeStyle = `rgba(108, 66, 30, ${0.22 + rand() * 0.14})`;
-      g.lineWidth = 1.2 + rand() * 1.4;
-      g.beginPath();
-      g.moveTo(cx - dx + 2, cy - dy + 3);
-      g.quadraticCurveTo(cx + 2, cy + 3, cx + dx + 2, cy + dy + 3);
-      g.stroke();
-    }
-
-    // 5. Fine matte band-aid / kraft tape texture speckles
-    for (let i = 0; i < 900; i++) {
-      const sx = rand() * W;
-      const sy = rand() * H;
-      g.fillStyle =
-        rand() > 0.45 ? 'rgba(112, 68, 32, 0.08)' : 'rgba(244, 216, 178, 0.09)';
-      g.fillRect(sx, sy, 2, 2);
-    }
-
-    // 6. Frayed / stretched lighter tan edge along both roughly torn ends
-    g.strokeStyle = 'rgba(236, 204, 162, 0.55)';
-    g.lineWidth = 3.2;
-    g.beginPath();
-    for (let i = 0; i <= stepsY; i++) {
-      if (i === 0) g.moveTo(leftTear[i].x + 1.5, leftTear[i].y);
-      else g.lineTo(leftTear[i].x + 1.5, leftTear[i].y);
-    }
-    for (let i = 0; i <= stepsY; i++) {
-      if (i === 0) g.moveTo(rightTear[i].x - 1.5, rightTear[i].y);
-      else g.lineTo(rightTear[i].x - 1.5, rightTear[i].y);
-    }
-    g.stroke();
-
-    g.restore();
-
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.needsUpdate = true;
-    return tex;
   }
 
   /**

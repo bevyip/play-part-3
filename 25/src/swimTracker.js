@@ -25,11 +25,9 @@ export const MAX_SWIM_DEPTH = 2.00;      // 2.00 m bottom of pool (maps to 0.95m
 
 export function createSwimTracker(state) {
   const panelEl = document.getElementById('swim-cam-panel');
-  const toggleBtnEl = document.getElementById('swim-cam-toggle');
   const bodyEl = document.getElementById('swim-cam-body');
   const videoEl = document.getElementById('swim-cam-video');
   const overlayCanvasEl = document.getElementById('swim-cam-canvas');
-  const statusEl = document.getElementById('swim-gesture-status');
   const hintEl = document.getElementById('swim-hint');
   const ctx = overlayCanvasEl ? overlayCanvasEl.getContext('2d') : null;
 
@@ -58,7 +56,6 @@ export function createSwimTracker(state) {
     manualHoldUntil: -10.0,   // Grace period if user manually clicks a preset or scrolls
     strokeIntensity: 0.0,     // 0..1 smoothed visual indicator of current outward push
     palmOutScore: 1.0,
-    phaseLabel: 'Bring 2 hands to center',
   };
 
   async function initMediaPipe() {
@@ -83,7 +80,6 @@ export function createSwimTracker(state) {
   async function startTracking() {
     if (isLoading || isEnabled) return;
     isLoading = true;
-    if (statusEl) statusEl.textContent = 'Starting camera...';
 
     try {
       const [landmarker, stream] = await Promise.all([
@@ -114,11 +110,9 @@ export function createSwimTracker(state) {
 
       if (panelEl) panelEl.classList.add('active');
       if (bodyEl) bodyEl.hidden = false;
-      if (statusEl) statusEl.textContent = 'Bring 2 hands to center';
     } catch (err) {
       console.error('Failed to start hand swim tracking:', err);
       isLoading = false;
-      if (statusEl) statusEl.textContent = '⚠️ Camera Denied — Click to Retry';
       if (panelEl) {
         panelEl.addEventListener('click', () => startTracking(), { once: true });
       }
@@ -386,29 +380,6 @@ export function createSwimTracker(state) {
         state.targetDepth = Math.max(SHALLOW_FLOAT_DEPTH, state.targetDepth - steadyFloatSpeed * dt);
       }
     }
-
-    // --- Update Status Pill Text ---
-    if (statusEl && isEnabled) {
-      if (tracker.isPushingOut) {
-        statusEl.textContent = '🌊 Diving deeper!';
-        statusEl.dataset.state = 'diving';
-      } else if (tracker.strokeArmed && tracker.hasTwoHands && tracker.smoothedSepX < 0.42) {
-        statusEl.textContent = '👐 Ready — Push palms outward!';
-        statusEl.dataset.state = 'ready';
-      } else if (
-        timeSinceStroke > 0.55 &&
-        state.targetDepth > SHALLOW_FLOAT_DEPTH + 0.03
-      ) {
-        statusEl.textContent = '🫧 Floating up to surface...';
-        statusEl.dataset.state = 'floating';
-      } else if (!tracker.hasTwoHands) {
-        statusEl.textContent = 'Show both hands in frame';
-        statusEl.dataset.state = 'idle';
-      } else {
-        statusEl.textContent = 'Bring hands together in center';
-        statusEl.dataset.state = 'idle';
-      }
-    }
   }
 
   function notifyManualDepthChange(nowSec) {
@@ -428,6 +399,5 @@ export function createSwimTracker(state) {
     update,
     notifyManualDepthChange,
     triggerFloatUp,
-    isEnabled: () => isEnabled,
   };
 }
