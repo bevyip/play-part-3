@@ -11,17 +11,22 @@ function emptyCrowd() {
   return { mimosa: [], junction: [], ducks: [], banana: [] };
 }
 
+// Dashboard copy-paste often carries stray whitespace or wrapping quotes.
+function env(name) {
+  return String(process.env[name] || '').trim().replace(/^["']|["']$/g, '');
+}
+
 function configured() {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY);
+  return Boolean(env('SUPABASE_URL') && env('SUPABASE_SECRET_KEY'));
 }
 
 async function table(method, query, body, prefer) {
-  const key = process.env.SUPABASE_SECRET_KEY;
+  const key = env('SUPABASE_SECRET_KEY');
   const headers = { apikey: key, 'Content-Type': 'application/json' };
   // Legacy service_role keys are JWTs and must also be sent as a bearer token.
   if (key.startsWith('eyJ')) headers.Authorization = `Bearer ${key}`;
   if (prefer) headers.Prefer = prefer;
-  const base = process.env.SUPABASE_URL.replace(/\/+$/, '');
+  const base = env('SUPABASE_URL').replace(/\/+$/, '');
   const res = await fetch(`${base}/rest/v1/presence${query}`, {
     method,
     headers,
