@@ -261,7 +261,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
         soundEngine.ctx = new AudioCtx();
       }
     }
-    if (soundEngine.ctx && soundEngine.ctx.state === 'suspended') {
+    if (soundEngine.ctx && soundEngine.ctx.state !== 'running' && soundEngine.ctx.state !== 'closed') {
       soundEngine.ctx.resume().catch(() => { });
     }
     // Pre-decode sound buffers once AudioContext is available
@@ -284,8 +284,19 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
     return soundEngine.ctx;
   }
 
-  ['pointerdown', 'pointermove', 'mousedown', 'keydown', 'touchstart'].forEach((evt) => {
-    window.addEventListener(evt, () => ensureAudioContext(), { passive: true });
+  // Mobile browsers only grant audio permission on touchend / pointerup / click, not touchstart or pointerdown
+  function unlockAudio() {
+    const ctx = ensureAudioContext();
+    if (!ctx || ctx.state === 'running') return;
+    // iOS Safari only unlocks Web Audio once a sound is started inside the gesture
+    const silent = ctx.createBufferSource();
+    silent.buffer = ctx.createBuffer(1, 1, 22050);
+    silent.connect(ctx.destination);
+    silent.start(0);
+  }
+
+  ['pointerdown', 'pointerup', 'mousedown', 'keydown', 'touchstart', 'touchend', 'click'].forEach((evt) => {
+    window.addEventListener(evt, unlockAudio, { passive: true, capture: true });
   });
 
   function playLayeredSound(key, { volume = 0.2, rate = 1.0, fadeOutSec = 0 } = {}) {
