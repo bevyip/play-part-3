@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Go For A Swim</title>
+  <link
+    rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏊</text></svg>"
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="./src/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div id="app">
+    <canvas id="pool-canvas"></canvas>
+
+    <!-- Simplified Right-Side Rectangular Depth Measure with Downward-Facing Swimming Stickman -->
+    <div id="depth-hud" class="depth-hud">
+      <div class="hud-body" id="hud-interactive-area">
+        <svg id="depth-svg" viewBox="0 0 44 324" width="44" height="324" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="waterColGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4ea3c8" stop-opacity="0.45" />
+              <stop offset="50%" stop-color="#2e7ca8" stop-opacity="0.55" />
+              <stop offset="100%" stop-color="#19557d" stop-opacity="0.68" />
+            </linearGradient>
+            <clipPath id="waterColClip">
+              <rect x="4" y="12" width="36" height="300" rx="3" />
+            </clipPath>
+          </defs>
+
+          <!-- Rectangular height measure background frame (y=12 to y=312, 300px tall) -->
+          <rect x="4" y="12" width="36" height="300" rx="3" fill="rgba(12, 30, 48, 0.38)"
+            stroke="rgba(215, 242, 255, 0.42)" stroke-width="1.2" />
+
+          <!-- Subtle water fill inside the rectangular measure -->
+          <g clip-path="url(#waterColClip)">
+            <rect id="water-col-fill" x="4.5" y="12" width="35" height="300" fill="url(#waterColGrad)" />
+
+            <!-- Wavy water surface line at top (y=12) -->
+            <path id="surface-wave-path" d="M 4 13 Q 7 10.5, 10 13 T 16 13 T 22 13 T 28 13 T 34 13 T 40 13" fill="none"
+              stroke="rgba(255, 255, 255, 0.85)" stroke-width="1.4" />
+
+            <!-- Simple white stickman facing downwards (head at bottom, legs at top) -->
+            <g id="swimmer-stickman" transform="translate(22, 28)" stroke="#ffffff" stroke-width="1.85"
+              stroke-linecap="round" stroke-linejoin="round" fill="none">
+              <!-- Legs (extending upward from hip at y=-4.5) -->
+              <path id="stickman-legs" d="M -3.8 -12.5 L -1.8 -8.2 L 0 -4.5 L 1.8 -8.2 L 3.8 -12.5" />
+              <!-- Torso / Spine (from hip y=-4.5 down to neck y=3.8) -->
+              <line x1="0" y1="-4.5" x2="0" y2="3.8" />
+              <!-- Arms (from shoulders at y=3.0, sweeping outward/downward) -->
+              <path id="stickman-arms" d="M -6.5 8.5 L -3.8 5.2 L 0 3.0 L 3.8 5.2 L 6.5 8.5" />
+              <!-- Head (facing downwards at y=7.6) -->
+              <circle cx="0" cy="7.6" r="3.1" fill="#ffffff" stroke="none" />
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Top-right minimalistic mini browser frame for webcam hand tracking preview -->
+    <div id="swim-cam-panel" class="swim-cam-panel active">
+      <div class="mini-browser-bar" aria-hidden="true">
+        <span class="mini-dot"></span>
+        <span class="mini-dot"></span>
+        <span class="mini-dot"></span>
+      </div>
+      <div id="swim-cam-body" class="swim-cam-body">
+        <div class="swim-cam-viewport">
+          <video id="swim-cam-video" playsinline muted></video>
+          <canvas id="swim-cam-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Faint blur overlay during freeze frame (sits below the frog canvas and popup texts) -->
+    <div id="boop-blur-overlay" class="boop-blur-overlay" aria-hidden="true"></div>
+
+    <!-- Dedicated transparent canvas for the 3D frog so it stays crisp above the blur overlay -->
+    <canvas id="frog-canvas" class="frog-canvas"></canvas>
+
+    <!-- Game-style floating indicators that rise up above the frog and fade out -->
+    <div id="frog-boop-text" class="frog-boop-text" aria-live="polite">
+      <span class="boop-symbol">+1</span> boop!
+    </div>
+
+    <div id="frog-toast" class="frog-toast" role="status" aria-live="polite">
+      You booped the frog.
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>
