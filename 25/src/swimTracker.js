@@ -30,6 +30,7 @@ export function createSwimTracker(state) {
   const videoEl = document.getElementById('swim-cam-video');
   const overlayCanvasEl = document.getElementById('swim-cam-canvas');
   const statusEl = document.getElementById('swim-gesture-status');
+  const hintEl = document.getElementById('swim-hint');
   const ctx = overlayCanvasEl ? overlayCanvasEl.getContext('2d') : null;
 
   let isEnabled = false;
@@ -322,6 +323,7 @@ export function createSwimTracker(state) {
             tracker.isPushingOut = true;
             tracker.isRecovering = false;
             tracker.lastStrokeTime = nowSec;
+            if (hintEl) hintEl.classList.add('dismissed');
             tracker.strokeIntensity = Math.min(1.0, velSep * 0.9);
 
             // Progressive depth resistance so reaching the bottom (2.0m peak visual) takes ~5-6 deliberate strokes

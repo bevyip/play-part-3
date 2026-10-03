@@ -307,6 +307,28 @@ body,
   animation: gameFloatUpToast 2.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s forwards;
 }
 
+.swim-hint {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  max-width: min(86vw, 560px);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  color: #f4fcff;
+  text-shadow: 0 1px 8px rgba(6, 20, 36, 0.75);
+  pointer-events: none;
+  transition: opacity 0.9s ease;
+}
+
+.swim-hint.dismissed {
+  opacity: 0;
+}
+
 @keyframes gameFloatUpBoop {
   0% {
     opacity: 0;
