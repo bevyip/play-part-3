@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Art Gallery by Beverly</title>
+  <link rel="icon" type="image/png" href="media/mimosa-stamp.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=9" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <main class="gallery-wall">
+    <button class="nav-tile nav-prev" id="nav-prev" type="button" aria-label="Previous artwork">
+      <div class="nav-tile-inner">
+        <div class="nav-icon" id="prev-icon" aria-hidden="true"></div>
+        <span class="nav-label" id="prev-label">Banana?</span>
+      </div>
+    </button>
+
+    <section class="exhibit-center">
+      <div class="art-tile-frame" id="art-tile-frame">
+        <div class="art-tile-bezel" id="art-tile-bezel">
+          <canvas id="webgl-canvas" class="tile-canvas"></canvas>
+          <canvas id="canvas-2d" class="tile-canvas"></canvas>
+        </div>
+      </div>
+
+      <footer class="art-plaque" id="art-plaque" aria-live="polite">
+        <div class="plaque-artist" id="plaque-title">Mimōsa Pudīca</div>
+        <div class="plaque-bio" id="plaque-subtitle">Interactive copperplate botanical study of the touch-sensitive
+          plant</div>
+      </footer>
+    </section>
+
+    <button class="nav-tile nav-next" id="nav-next" type="button" aria-label="Next artwork">
+      <div class="nav-tile-inner">
+        <div class="nav-icon" id="next-icon" aria-hidden="true"></div>
+        <span class="nav-label" id="next-label">Tourist in New York City</span>
+      </div>
+    </button>
+  </main>
+
+  <script type="module" src="script.js?v=17"></script>
+</body>
+
+</html>
