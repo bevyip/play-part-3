@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-import { createGalleryRoom } from './room.js?v=5';
+import { createGalleryRoom } from './room.js?v=8';
 import { createPresence } from './presence.js?v=2';
 (() => {
   const webglCanvas = document.getElementById('webgl-canvas');

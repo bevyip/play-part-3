@@ -546,6 +546,33 @@ html.in-room .gallery-wall {
   gap: 4px;
 }
 
+.room-tip {
+  display: none;
+  position: fixed;
+  z-index: 12;
+  margin: 0;
+  transform: translate(-50%, calc(-100% - 26px));
+  color: #272727;
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+html.in-room .room-tip {
+  display: block;
+}
+
+.room-tip.is-on {
+  opacity: 1;
+}
+
 .room-legend {
   display: none;
   position: fixed;

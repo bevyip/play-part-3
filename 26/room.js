@@ -433,9 +433,35 @@ export function createGalleryRoom({
     camera.aspect = window.innerWidth / Math.max(window.innerHeight, 1);
     camera.updateProjectionMatrix();
     fitOverview();
-    if (mode === "room") lookOverview();
+    if (mode === "room") {
+      lookOverview();
+      camera.updateMatrixWorld();
+      placeTip();
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
+  }
+
+  const tip = document.getElementById("room-tip");
+  const tipAnchor = new THREE.Vector3();
+
+  // Pins the tip just above the character's head at the start spot.
+  function placeTip() {
+    if (!tip) return;
+    tipAnchor.set(0, CHAR_HEIGHT, 0).project(camera);
+    tip.style.left = `${((tipAnchor.x + 1) / 2) * window.innerWidth}px`;
+    tip.style.top = `${((1 - tipAnchor.y) / 2) * window.innerHeight}px`;
+  }
+
+  function showTip() {
+    if (!tip) return;
+    camera.updateMatrixWorld();
+    placeTip();
+    tip.classList.add("is-on");
+  }
+
+  function hideTip() {
+    if (tip) tip.classList.remove("is-on");
   }
 
   function showCanvasSharp() {
@@ -765,6 +791,7 @@ export function createGalleryRoom({
   }
 
   function onKeyDown(event) {
+    if (mode === "room") hideTip();
     if (!ARROWS.has(event.key) || mode !== "room") return;
     event.preventDefault();
     held.add(event.key);
@@ -794,6 +821,7 @@ export function createGalleryRoom({
       if (mode !== "room") return;
       event.preventDefault();
       icon.setPointerCapture(event.pointerId);
+      hideTip();
       held.add(key);
       showKey(key, true);
     });
@@ -829,6 +857,7 @@ export function createGalleryRoom({
         player.rotation.y = 0;
         player.visible = true;
       }
+      showTip();
     },
     flyHome(exhibitId) {
       if (mode === "fly") return;
